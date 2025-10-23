@@ -26,7 +26,6 @@ async function submit() {
     });
     alert("Aufgabe erfolgreich erstellt!");
 
-    // Reset form after successful submission
     titel.value = "";
     beschreibung.value = "";
     datum.value = "";
@@ -41,13 +40,11 @@ async function submit() {
 </script>
 
 <template>
-  <!-- Header -->
   <div class="bg-red-7 text-white q-pa-md shadow-3 rounded-borders q-mb-lg">
     <div class="text-h4 text-weight-bold">Aufgabe erstellen</div>
     <div class="text-subtitle1">Administrator Bereich</div>
   </div>
 
-  <!-- Create Task Form -->
   <div class="row justify-center">
     <div class="col-12 col-md-8 col-lg-6">
       <q-card class="shadow-2">
@@ -57,7 +54,6 @@ async function submit() {
 
         <q-card-section class="q-pa-lg">
           <q-form @submit.prevent="submit" class="q-gutter-md">
-            <!-- Titel -->
             <q-input
               v-model="titel"
               label="Titel *"
@@ -67,7 +63,6 @@ async function submit() {
               placeholder="Titel der Aufgabe eingeben"
             />
 
-            <!-- Beschreibung -->
             <q-input
               v-model="beschreibung"
               label="Beschreibung"
@@ -78,7 +73,6 @@ async function submit() {
               rows="3"
             />
 
-            <!-- Datum & Uhrzeit -->
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6">
                 <q-input
@@ -103,7 +97,6 @@ async function submit() {
               </div>
             </div>
 
-            <!-- IDs -->
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-4">
                 <q-input
@@ -138,7 +131,6 @@ async function submit() {
               </div>
             </div>
 
-            <!-- Submit Button -->
             <div class="q-pt-md">
               <q-btn
                 label="Aufgabe erstellen"
@@ -151,7 +143,6 @@ async function submit() {
               />
             </div>
 
-            <!-- Form Info -->
             <div class="text-center q-pt-sm">
               <div class="text-caption text-grey-6">* Pflichtfelder</div>
             </div>
@@ -159,7 +150,6 @@ async function submit() {
         </q-card-section>
       </q-card>
 
-      <!-- Quick Help -->
       <q-card class="q-mt-md shadow-1">
         <q-card-section class="bg-blue-1">
           <div class="text-h6 text-blue-8 q-mb-sm">📋 Schnellinfo</div>
@@ -182,7 +172,6 @@ async function submit() {
   font-size: 1rem;
 }
 
-/* Custom focus style for inputs */
 :deep(.q-field--outlined.q-field--focused .q-field__control) {
   border-color: #d32f2f !important;
 }

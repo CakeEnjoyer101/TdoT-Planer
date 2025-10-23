@@ -10,7 +10,6 @@ onMounted(async () => {
       withCredentials: true,
     });
 
-    // Filter tasks: max 2 tasks, 1 per day
     const filteredTasks = filterTasks(res.data);
     tasks.value = filteredTasks;
   } catch (err) {
@@ -18,17 +17,14 @@ onMounted(async () => {
   }
 });
 
-// Filter function to get max 2 tasks, 1 per day
 const filterTasks = (allTasks) => {
   const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
 
-  // Format dates to YYYY-MM-DD for comparison
   const todayStr = today.toISOString().split("T")[0];
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-  // Get one task for today and one for tomorrow
   const todayTask = allTasks.find((task) => task.datum === todayStr);
   const tomorrowTask = allTasks.find((task) => task.datum === tomorrowStr);
 
@@ -36,7 +32,6 @@ const filterTasks = (allTasks) => {
   if (todayTask) result.push(todayTask);
   if (tomorrowTask) result.push(tomorrowTask);
 
-  // If no tasks for today/tomorrow, take the next 2 upcoming tasks
   if (result.length < 2) {
     const upcomingTasks = allTasks
       .filter((task) => !result.includes(task) && new Date(task.datum) >= today)
@@ -46,7 +41,7 @@ const filterTasks = (allTasks) => {
     result.push(...upcomingTasks);
   }
 
-  return result.slice(0, 2); // Ensure max 2 tasks
+  return result.slice(0, 2);
 };
 
 // const formatDate = (dateString) => {
@@ -60,18 +55,16 @@ const filterTasks = (allTasks) => {
 
 const formatTime = (timeString) => {
   if (!timeString) return "";
-  return timeString.substring(0, 5); // Show only HH:MM
+  return timeString.substring(0, 5);
 };
 </script>
 
 <template>
-  <!-- Simple Header -->
   <div class="text-center q-mb-md">
     <div class="text-h5 text-red-7 text-weight-bold">Deine Aufgaben</div>
     <div class="text-caption text-grey-6">Maximal 2 Aufgaben (1 pro Tag)</div>
   </div>
 
-  <!-- Tasks List - Simplified -->
   <div class="row justify-center">
     <div class="col-12 col-md-8">
       <div v-if="tasks.length === 0" class="text-center q-pa-xl">
@@ -91,7 +84,6 @@ const formatTime = (timeString) => {
         >
           <q-card-section class="q-pa-md">
             <div class="row items-center">
-              <!-- Date Badge -->
               <div class="col-3 text-center">
                 <div
                   class="date-badge bg-red-7 text-white q-pa-sm rounded-borders"
@@ -116,7 +108,6 @@ const formatTime = (timeString) => {
                 </div>
               </div>
 
-              <!-- Task Content -->
               <div class="col-9">
                 <div class="text-h6 text-red-8 text-weight-bold q-mb-xs">
                   {{ task.titel }}
@@ -141,7 +132,6 @@ const formatTime = (timeString) => {
         </q-card>
       </div>
 
-      <!-- Info text when less than 2 tasks -->
       <div
         v-if="tasks.length > 0 && tasks.length < 2"
         class="text-center q-mt-md"
@@ -166,7 +156,7 @@ const formatTime = (timeString) => {
 }
 
 .border-today {
-  border-left: 4px solid #388e3c; /* Green for today's tasks */
+  border-left: 4px solid #388e3c;
 }
 
 .date-badge {
@@ -179,7 +169,6 @@ const formatTime = (timeString) => {
 </style>
 
 <script>
-// Helper function to check if a date is today
 const isToday = (dateString) => {
   const today = new Date();
   const taskDate = new Date(dateString);
