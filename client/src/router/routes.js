@@ -2,12 +2,12 @@ const routes = [
   // Always leave this as last one,
   // but you can also remove it
  {
-    path: "/",
+    path: "/main",
     name: "main",
     component: () => import("../pages/MainPage.vue"),
   },
   {
-    path: "/login",
+    path: "/",
     name: "login",
     component: () => import("../pages/LoginPage.vue"),
   },

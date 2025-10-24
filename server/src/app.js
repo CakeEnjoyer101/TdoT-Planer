@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import session from 'express-session';
-import passport from '../src/passport/passport.js';
+import passport from './passport/passport.js';
 
 import testRoute from './routes/test.js';
 import routes from './routes/routes.js';

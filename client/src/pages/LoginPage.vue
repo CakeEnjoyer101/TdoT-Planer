@@ -7,7 +7,7 @@ function loginWithGoogle() {
 }
 
 function loginDev() {
-  window.location.href = "http://localhost:3000/auth/devlogin";
+  window.location.href = "http://localhost:9000/main";
 }
 async function loginAdminDev() {
   (window.location.href = "http://localhost:3000/auth/admin-devlogin"),
