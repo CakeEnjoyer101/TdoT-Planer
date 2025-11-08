@@ -1,4 +1,5 @@
 import { query } from '../../boilerplate/db/index.js';
+import bcrypt from 'bcrypt';
 
 export const findUserByEmail = async (email) => {
   const result = await query('SELECT * FROM user_account WHERE email = $1', [email]);
@@ -10,14 +11,29 @@ export const findUserById = async (userid) => {
   return result.rows[0];
 };
 
-export const createUser = async (email, name) => {
+export const createUser = async (email, name, password, lehrerid = null) => {
+  const hashedPassword = await bcrypt.hash(password, 12);
+
   const result = await query(
-    `INSERT INTO user_account (email, name) VALUES ($1, $2)
-     ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
-     RETURNING *`,
-    [email, name],
+    `INSERT INTO user_account (email, name, password_hash, lehrerid) VALUES ($1, $2, $3, $4)
+     RETURNING userid, email, name, created_at, lehrerid`,
+    [email, name, hashedPassword, lehrerid],
   );
   return result.rows[0];
+};
+
+// Neuen Lehrer erstellen
+export const createLehrer = async (name, fachbereich = 'Allgemein') => {
+  const result = await query('INSERT INTO lehrer (name, fachbereich) VALUES ($1, $2) RETURNING *', [
+    name,
+    fachbereich,
+  ]);
+  return result.rows[0];
+};
+
+export const verifyPassword = async (plainPassword, hashedPassword) => {
+  if (!hashedPassword) return false;
+  return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
 export const isAdmin = async (userid) => {
@@ -25,17 +41,90 @@ export const isAdmin = async (userid) => {
   return result.rows.length > 0;
 };
 
-export const createAufgabe = async (data) => {
-  const { titel, beschreibung, datum, uhrzeit, tagid, lehrerid, leiterid } = data;
+export const getAdminDetails = async (userid) => {
   const result = await query(
-    `INSERT INTO aufgabe (titel, beschreibung, datum, uhrzeit, tagid, lehrerid, leiterid)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [titel, beschreibung, datum, uhrzeit, tagid, lehrerid, leiterid],
+    `SELECT u.*, a.role, a.created_at as admin_since
+     FROM user_account u
+     JOIN admin a ON u.userid = a.userid
+     WHERE u.userid = $1`,
+    [userid],
+  );
+  return result.rows[0];
+};
+
+// In model.js - createAufgabe anpassen
+export const createAufgabe = async (data) => {
+  const { titel, beschreibung, datum, uhrzeit, lehrerid } = data;
+  const result = await query(
+    `INSERT INTO aufgabe (titel, beschreibung, datum, uhrzeit, lehrerid)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [titel, beschreibung, datum, uhrzeit, lehrerid],
   );
   return result.rows[0];
 };
 
 export const getAufgaben = async () => {
   const result = await query('SELECT * FROM aufgabe ORDER BY datum ASC');
+  return result.rows;
+};
+
+export const updateUserKlasse = async (userid, klasse) => {
+  const result = await query('UPDATE user_account SET klasse = $1 WHERE userid = $2 RETURNING *', [
+    klasse,
+    userid,
+  ]);
+  return result.rows[0];
+};
+
+export const schuelerFuerAufgabeAnmelden = async (schuelerUserid, aufgabeid) => {
+  // Prüfen ob bereits angemeldet
+  const existing = await query(
+    'SELECT * FROM schueler_aufgabe_anmeldung WHERE schueler_userid = $1 AND aufgabeid = $2',
+    [schuelerUserid, aufgabeid],
+  );
+
+  if (existing.rows.length > 0) {
+    throw new Error('Bereits für diese Aufgabe angemeldet');
+  }
+
+  const result = await query(
+    'INSERT INTO schueler_aufgabe_anmeldung (schueler_userid, aufgabeid) VALUES ($1, $2) RETURNING *',
+    [schuelerUserid, aufgabeid],
+  );
+  return result.rows[0];
+};
+
+// Lehrer für Aufgabe anmelden (Aufgabe übernehmen)
+export const lehrerFuerAufgabeAnmelden = async (lehrerUserid, aufgabeid) => {
+  const result = await query('UPDATE aufgabe SET lehrerid = $1 WHERE aufgabeid = $2 RETURNING *', [
+    lehrerUserid,
+    aufgabeid,
+  ]);
+  return result.rows[0];
+};
+
+// Angemeldete Aufgaben für Schüler holen
+export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
+  const result = await query(
+    `SELECT a.*, sa.angemeldet_am
+     FROM aufgabe a
+     JOIN schueler_aufgabe_anmeldung sa ON a.aufgabeid = sa.aufgabeid
+     WHERE sa.schueler_userid = $1
+     ORDER BY a.datum, a.uhrzeit`,
+    [schuelerUserid],
+  );
+  return result.rows;
+};
+
+// Übernommene Aufgaben für Lehrer holen
+export const getUebernommeneAufgabenFuerLehrer = async (lehrerUserid) => {
+  const result = await query(
+    `SELECT a.*, l.name as lehrer_name
+     FROM aufgabe a
+     LEFT JOIN lehrer l ON a.lehrerid = l.lehrerid
+     WHERE a.lehrerid = $1
+     ORDER BY a.datum, a.uhrzeit`,
+    [lehrerUserid],
+  );
   return result.rows;
 };

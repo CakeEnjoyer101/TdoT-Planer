@@ -1,25 +1,26 @@
 const routes = [
-  // Always leave this as last one,
-  // but you can also remove it
- {
-    path: "/main",
-    name: "main",
-    component: () => import("../pages/MainPage.vue"),
-  },
   {
     path: "/",
     name: "login",
-    component: () => import("../pages/LoginPage.vue"),
+    component: () => import("pages/LoginPage.vue"),
+  },
+  {
+    path: "/main",
+    name: "main",
+    component: () => import("pages/MainPage.vue"),
+    meta: { requiresAuth: true },
   },
   {
     path: "/admin",
     name: "admin",
-    component: () => import("../pages/AdminDashboard.vue"),
+    component: () => import("pages/AdminDashboard.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: "/user",
     name: "user",
-    component: () => import("../pages/UserTasks.vue"),
+    component: () => import("pages/UserTasks.vue"),
+    meta: { requiresAuth: true },
   },
   {
     path: "/:catchAll(.*)*",

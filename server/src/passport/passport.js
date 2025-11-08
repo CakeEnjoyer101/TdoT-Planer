@@ -1,6 +1,6 @@
 import passport from 'passport';
 import dotenv from 'dotenv';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as LocalStrategy } from 'passport-local';
 import * as model from '../model/model.js';
 
 dotenv.config();
@@ -19,22 +19,29 @@ passport.deserializeUser(async (id, done) => {
 });
 
 passport.use(
-  new GoogleStrategy(
+  new LocalStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      usernameField: 'email',
+      passwordField: 'password',
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (email, password, done) => {
       try {
-        const email = profile.emails?.[0]?.value?.toLowerCase();
+        const user = await model.findUserByEmail(email.toLowerCase());
 
-        if (!email.endsWith('@htlwienwest.at')) {
-          return done(null, false, { message: 'Unauthorized domain' });
+        if (!user) {
+          return done(null, false, { message: 'Falsche Email oder Passwort' });
         }
 
-        const name = profile.displayName || 'User';
-        const user = await model.createUser(email, name);
+        if (!user.password_hash) {
+          return done(null, false, { message: 'Bitte registriere dich zuerst' });
+        }
+
+        const isValidPassword = await model.verifyPassword(password, user.password_hash);
+
+        if (!isValidPassword) {
+          return done(null, false, { message: 'Falsche Email oder Passwort' });
+        }
+
         return done(null, user);
       } catch (err) {
         return done(err);

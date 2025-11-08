@@ -1,19 +1,98 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import axios from "axios";
+
+const email = ref("");
+const password = ref("");
+const name = ref("");
 const error = ref(null);
+const isLoading = ref(false);
+const isRegister = ref(false);
 
-function loginWithGoogle() {
-  window.location.href = "http://localhost:3000/auth/google";
+// Computed Property für Email-Validierung
+const isEmailValid = computed(() => {
+  if (!isRegister.value || !email.value) return true;
+
+  const schuelerEmailRegex = /^[a-z]+\.[a-z][0-9]{2}@htlwienwest\.at$/;
+  const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
+
+  return schuelerEmailRegex.test(email.value.toLowerCase()) ||
+         lehrerEmailRegex.test(email.value.toLowerCase());
+});
+
+const isLehrerEmail = computed(() => {
+  if (!isRegister.value || !email.value) return false;
+
+  const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
+  return lehrerEmailRegex.test(email.value.toLowerCase());
+});
+
+const emailHint = computed(() => {
+  if (!isRegister.value) return "";
+
+  if (email.value && !isEmailValid.value) {
+    return ;
+  }
+
+  if (isLehrerEmail.value) {
+    return "Lehrer-Account erkannt";
+  }
+
+  return "";
+});
+
+async function handleSubmit() {
+  error.value = null;
+
+  // Client-seitige Validierung
+  if (isRegister.value && !isEmailValid.value) {
+    return;
+  }
+
+  isLoading.value = true;
+
+  try {
+    if (isRegister.value) {
+      // Register
+      await axios.post(
+        "http://localhost:3000/auth/register",
+        {
+          email: email.value,
+          name: name.value,
+          password: password.value,
+        },
+        { withCredentials: true }
+      );
+
+      // Nach erfolgreicher Registrierung direkt zur Main Page
+      window.location.href = "http://localhost:9000/main";
+    } else {
+      // Login
+      await axios.post(
+        "http://localhost:3000/auth/login",
+        {
+          email: email.value,
+          password: password.value,
+        },
+        { withCredentials: true }
+      );
+
+      // Nach erfolgreichem Login zur Main Page
+      window.location.href = "http://localhost:9000/main";
+    }
+  } catch (err) {
+    error.value = err.response?.data?.error || "Ein Fehler ist aufgetreten";
+  } finally {
+    isLoading.value = false;
+  }
 }
 
-function loginDev() {
-  window.location.href = "http://localhost:9000/main";
-}
-async function loginAdminDev() {
-  (window.location.href = "http://localhost:3000/auth/admin-devlogin"),
-    {
-      credentials: "include",
-    };
+function toggleMode() {
+  isRegister.value = !isRegister.value;
+  error.value = null;
+  email.value = "";
+  password.value = "";
+  name.value = "";
 }
 </script>
 
@@ -33,34 +112,69 @@ async function loginAdminDev() {
           </div>
 
           <div class="q-mt-xl">
-            <h4 class="text-h4 text-red-7 q-mb-lg">Anmelden</h4>
+            <h4 class="text-h4 text-red-7 q-mb-lg">
+              {{ isRegister ? "Registrieren" : "Anmelden" }}
+            </h4>
 
-            <q-btn
-              label="Mit Google einloggen"
-              @click="loginWithGoogle"
-              color="red-7"
-              class="full-width q-mb-md"
-              size="lg"
-              icon="login"
-            />
+            <q-form @submit.prevent="handleSubmit" class="q-gutter-md">
+              <q-input
+                v-model="email"
+                label="Email"
+                type="email"
+                required
+                color="red-7"
+                outlined
+                :rules="[
+                  val => !!val || 'Email ist erforderlich',
+                ]"
+                :hint="emailHint"
+                :error="isRegister && email && !isEmailValid"
+                :class="{ 'lehrer-email': isLehrerEmail }"
+              />
 
-            <q-btn
-              label="Dev Login (User)"
-              @click="loginDev"
-              color="red-5"
-              class="full-width q-mb-md"
-              size="lg"
-              outline
-            />
+              <q-input
+                v-if="isRegister"
+                v-model="name"
+                label="Vollständiger Name"
+                required
+                color="red-7"
+                outlined
+                :rules="[val => !!val || 'Name ist erforderlich']"
+              />
 
-            <q-btn
-              label="Dev Login (Admin)"
-              @click="loginAdminDev"
-              color="red-8"
-              class="full-width"
-              size="lg"
-              outline
-            />
+              <q-input
+                v-model="password"
+                label="Passwort"
+                :type="isRegister ? 'text' : 'password'"
+                required
+                color="red-7"
+                outlined
+                :placeholder="isRegister ? 'Mindestens 6 Zeichen' : 'Dein Passwort'"
+                :rules="[
+                  val => !!val || 'Passwort ist erforderlich',
+                  val => !isRegister || val.length >= 6 || 'Mindestens 6 Zeichen'
+                ]"
+              />
+
+              <q-btn
+                :label="isRegister ? 'Registrieren' : 'Anmelden'"
+                type="submit"
+                :loading="isLoading"
+                color="red-7"
+                class="full-width q-mb-md"
+                size="lg"
+                :icon="isRegister ? 'person_add' : 'login'"
+              />
+
+              <q-btn
+                :label="isRegister ? 'Zurück zum Login' : 'Noch keinen Account?'"
+                @click="toggleMode"
+                color="red-5"
+                class="full-width"
+                size="md"
+                outline
+              />
+            </q-form>
           </div>
 
           <div
@@ -102,5 +216,10 @@ async function loginAdminDev() {
 
 .full-height {
   min-height: 100vh;
+}
+
+/* Grüne Umrandung für Lehrer-Emails */
+:deep(.lehrer-email .q-field__control) {
+  border-color: #388e3c !important;
 }
 </style>

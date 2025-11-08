@@ -2,8 +2,13 @@ import * as model from '../model/model.js';
 
 export const getProfile = async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
-  const isAdmin = await model.isAdmin(req.user.userid);
-  return res.json({ user: req.user, isAdmin });
+
+  const isAdminUser = await model.isAdmin(req.user.userid);
+
+  return res.json({
+    user: req.user,
+    isAdmin: isAdminUser,
+  });
 };
 
 export const createAufgabe = async (req, res) => {
