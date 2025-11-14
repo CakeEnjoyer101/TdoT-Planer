@@ -15,8 +15,10 @@ const isEmailValid = computed(() => {
   const schuelerEmailRegex = /^[a-z]+\.[a-z][0-9]{2}@htlwienwest\.at$/;
   const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
 
-  return schuelerEmailRegex.test(email.value.toLowerCase()) ||
-         lehrerEmailRegex.test(email.value.toLowerCase());
+  return (
+    schuelerEmailRegex.test(email.value.toLowerCase()) ||
+    lehrerEmailRegex.test(email.value.toLowerCase())
+  );
 });
 
 const isLehrerEmail = computed(() => {
@@ -30,7 +32,7 @@ const emailHint = computed(() => {
   if (!isRegister.value) return "";
 
   if (email.value && !isEmailValid.value) {
-    return ;
+    return;
   }
 
   if (isLehrerEmail.value) {
@@ -118,9 +120,7 @@ function toggleMode() {
                 required
                 color="red-7"
                 outlined
-                :rules="[
-                  val => !!val || 'Email ist erforderlich',
-                ]"
+                :rules="[(val) => !!val || 'Email ist erforderlich']"
                 :hint="emailHint"
                 :error="isRegister && email && !isEmailValid"
                 :class="{ 'lehrer-email': isLehrerEmail }"
@@ -133,20 +133,23 @@ function toggleMode() {
                 required
                 color="red-7"
                 outlined
-                :rules="[val => !!val || 'Name ist erforderlich']"
+                :rules="[(val) => !!val || 'Name ist erforderlich']"
               />
 
               <q-input
                 v-model="password"
                 label="Passwort"
-                :type="isRegister ? 'text' : 'password'"
+                type="password"
                 required
                 color="red-7"
                 outlined
-                :placeholder="isRegister ? 'Mindestens 6 Zeichen' : 'Dein Passwort'"
+                :placeholder="
+                  isRegister ? 'Mindestens 6 Zeichen' : 'Dein Passwort'
+                "
                 :rules="[
-                  val => !!val || 'Passwort ist erforderlich',
-                  val => !isRegister || val.length >= 6 || 'Mindestens 6 Zeichen'
+                  (val) => !!val || 'Passwort ist erforderlich',
+                  (val) =>
+                    !isRegister || val.length >= 6 || 'Mindestens 6 Zeichen',
                 ]"
               />
 
@@ -161,7 +164,9 @@ function toggleMode() {
               />
 
               <q-btn
-                :label="isRegister ? 'Zurück zum Login' : 'Noch keinen Account?'"
+                :label="
+                  isRegister ? 'Zurück zum Login' : 'Noch keinen Account?'
+                "
                 @click="toggleMode"
                 color="red-5"
                 class="full-width"
