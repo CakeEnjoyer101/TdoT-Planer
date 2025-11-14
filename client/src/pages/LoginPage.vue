@@ -9,7 +9,6 @@ const error = ref(null);
 const isLoading = ref(false);
 const isRegister = ref(false);
 
-// Computed Property für Email-Validierung
 const isEmailValid = computed(() => {
   if (!isRegister.value || !email.value) return true;
 
@@ -44,7 +43,6 @@ const emailHint = computed(() => {
 async function handleSubmit() {
   error.value = null;
 
-  // Client-seitige Validierung
   if (isRegister.value && !isEmailValid.value) {
     return;
   }
@@ -53,7 +51,6 @@ async function handleSubmit() {
 
   try {
     if (isRegister.value) {
-      // Register
       await axios.post(
         "http://localhost:3000/auth/register",
         {
@@ -64,10 +61,8 @@ async function handleSubmit() {
         { withCredentials: true }
       );
 
-      // Nach erfolgreicher Registrierung direkt zur Main Page
       window.location.href = "http://localhost:9000/main";
     } else {
-      // Login
       await axios.post(
         "http://localhost:3000/auth/login",
         {
@@ -77,7 +72,6 @@ async function handleSubmit() {
         { withCredentials: true }
       );
 
-      // Nach erfolgreichem Login zur Main Page
       window.location.href = "http://localhost:9000/main";
     }
   } catch (err) {

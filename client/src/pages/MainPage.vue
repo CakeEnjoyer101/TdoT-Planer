@@ -1,6 +1,5 @@
 <template>
   <div class="main-page">
-    <!-- Klassen Eingabe Popup (nur für Schüler) -->
     <div v-if="showKlassePopup" class="klasse-popup-overlay">
       <div class="klasse-popup">
         <div class="popup-header">
@@ -41,7 +40,6 @@
           Abmelden
         </button>
 
-        <!-- Admin Dashboard Button (nur für Admin) -->
         <button
           v-if="currentUser && currentUser.klasse === 'Admin'"
           class="admin-btn"
@@ -151,7 +149,6 @@
           Anmelden
         </button>
 
-        <!-- Lehrer Anmelde-Button -->
         <button
           v-if="currentUser && currentUser.klasse === 'Lehrer'"
           class="lehrer-anmelde-btn"
@@ -443,7 +440,6 @@ export default {
   align-items: center;
 }
 
-/* Logout Button */
 .logout-btn {
   background: #f44336;
   color: white;
@@ -464,7 +460,6 @@ export default {
   box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
 }
 
-/* Admin Button */
 .admin-btn {
   background: #7b1fa2;
   color: white;
@@ -486,7 +481,6 @@ export default {
   box-shadow: 0 4px 12px rgba(123, 31, 162, 0.3);
 }
 
-/* User Info */
 .user-details {
   display: flex;
   flex-direction: column;
@@ -535,7 +529,6 @@ export default {
   font-size: 14px;
 }
 
-/* Klassen Popup Styles */
 .klasse-popup-overlay {
   position: fixed;
   top: 0;
@@ -604,7 +597,6 @@ export default {
   font-weight: 600;
 }
 
-/* Rest der bestehenden Styles */
 .content {
   padding: 30px 10px 0;
   background: white;
@@ -896,7 +888,6 @@ export default {
   transform: translateX(-18px) scale(0.995);
 }
 
-/* Responsive Anpassungen */
 @media (max-width: 900px) {
   .header h1 {
     font-size: 36px;

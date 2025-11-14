@@ -35,20 +35,16 @@ router.post(
       return res.status(400).json({ error: 'Nur HTL Wien West Emails sind erlaubt' });
     }
 
-    // Prüfe ob es sich um den speziellen Admin-Account handelt
     const isAdminAccount =
       email.toLowerCase() === 'admin@htlwienwest.at' && password === 'Admin123!';
 
     if (isAdminAccount) {
       console.log('🔐 ADMIN ACCOUNT REGISTRATION DETECTED');
-      // Überspringe Format-Validierung für Admin
     } else {
-      // Verhindere, dass jemand anders die Admin Email registriert
       if (email.toLowerCase() === 'admin@htlwienwest.at') {
         return res.status(400).json({ error: 'Diese Email kann nicht registriert werden' });
       }
 
-      // Normale Format-Validierung für Schüler/Lehrer
       const schuelerEmailRegex = /^[a-z]+\.[a-z][0-9]{2}@htlwienwest\.at$/;
       const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
 
@@ -68,24 +64,20 @@ router.post(
       return res.status(400).json({ error: 'Email bereits registriert' });
     }
 
-    // LEHRER AUTOMATISCH ERSTELLEN FÜR LEHRER-ACCOUNTS
     let lehrerId = null;
     if (!isAdminAccount) {
       const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
       const isLehrer = lehrerEmailRegex.test(email.toLowerCase());
 
       if (isLehrer) {
-        // NEUEN LEHRER IN LEHRER-TABELLE ERSTELLEN
         const neuerLehrer = await model.createLehrer(name, 'Allgemein');
         lehrerId = neuerLehrer.lehrerid;
         console.log(`🎯 Neuer Lehrer erstellt: ${name} mit ID ${lehrerId}`);
       }
     }
 
-    // User mit Lehrer-ID erstellen
     const user = await model.createUser(email, name, password, lehrerId);
 
-    // Klasse setzen basierend auf Account-Typ
     if (isAdminAccount) {
       console.log('🎯 Setting user as admin:', user.email);
       await model.updateUserKlasse(user.userid, 'Admin');
@@ -120,7 +112,6 @@ router.post(
   }),
 );
 
-// Login Route
 router.post('/auth/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) {
@@ -146,17 +137,13 @@ router.post('/auth/login', (req, res, next) => {
   })(req, res, next);
 });
 
-// Profile Route
 router.get('/auth/profile', ensureAuth, asyncHandler(controller.getProfile));
 
-// Logout Route
 router.post('/auth/logout', controller.logout);
 
-// Aufgaben Routes
 router.get('/aufgaben', ensureAuth, asyncHandler(controller.getAufgaben));
 router.post('/aufgaben', ensureAuth, ensureAdmin, asyncHandler(controller.createAufgabe));
 
-// Klassen Update Route
 router.post(
   '/auth/update-klasse',
   ensureAuth,
@@ -176,7 +163,6 @@ router.post(
   }),
 );
 
-// Schüler für Aufgabe anmelden
 router.post(
   '/aufgaben/:id/anmelden',
   ensureAuth,
@@ -184,7 +170,6 @@ router.post(
     const aufgabeid = parseInt(req.params.id);
     const userid = req.user.userid;
 
-    // Prüfen ob User ein Schüler ist
     if (req.user.klasse && req.user.klasse !== 'Admin' && req.user.klasse !== 'Lehrer') {
       const anmeldung = await model.schuelerFuerAufgabeAnmelden(userid, aufgabeid);
       res.json({ message: 'Erfolgreich für Aufgabe angemeldet', anmeldung });
@@ -194,7 +179,6 @@ router.post(
   }),
 );
 
-// Lehrer für Aufgabe anmelden (Aufgabe übernehmen)
 router.post(
   '/aufgaben/:id/lehrer-anmelden',
   ensureAuth,
@@ -202,7 +186,6 @@ router.post(
     const aufgabeid = parseInt(req.params.id);
     const userid = req.user.userid;
 
-    // Prüfen ob User ein Lehrer ist
     if (req.user.klasse === 'Lehrer' && req.user.lehrerid) {
       const aufgabe = await model.lehrerFuerAufgabeAnmelden(req.user.lehrerid, aufgabeid);
       res.json({ message: 'Aufgabe erfolgreich übernommen', aufgabe });
@@ -212,7 +195,6 @@ router.post(
   }),
 );
 
-// Angemeldete/Uebernommene Aufgaben holen
 router.get(
   '/user/aufgaben',
   ensureAuth,
@@ -221,10 +203,8 @@ router.get(
     let aufgaben = [];
 
     if (req.user.klasse === 'Lehrer') {
-      // Lehrer: übernommene Aufgaben
       aufgaben = await model.getUebernommeneAufgabenFuerLehrer(req.user.lehrerid);
     } else if (req.user.klasse && req.user.klasse !== 'Admin') {
-      // Schüler: angemeldete Aufgaben
       aufgaben = await model.getAngemeldeteAufgabenFuerSchueler(userid);
     }
 

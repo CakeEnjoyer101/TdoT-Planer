@@ -10,7 +10,6 @@ const tagid = ref(1);
 const lehrerid = ref(null);
 const leiterid = ref(1);
 
-// Überprüfe ob Admin (über Klasse) beim Laden der Seite
 onMounted(async () => {
   try {
     const response = await axios.get("http://localhost:3000/auth/profile", {
@@ -18,7 +17,6 @@ onMounted(async () => {
     });
 
     if (response.data.user.klasse !== 'Admin') {
-      // Nicht-Admin zur Main Page weiterleiten
       alert("Zugriff verweigert: Nur Administratoren dürfen diese Seite aufrufen.");
       window.location.href = "http://localhost:9000/main";
     }
@@ -45,7 +43,6 @@ async function submit() {
     });
     alert("Aufgabe erfolgreich erstellt!");
 
-    // Formular zurücksetzen
     titel.value = "";
     beschreibung.value = "";
     datum.value = "";
@@ -66,7 +63,6 @@ async function submit() {
 
 <template>
   <div class="admin-dashboard">
-    <!-- Header mit Admin Info -->
     <div class="bg-purple-7 text-white q-pa-md shadow-3 rounded-borders q-mb-lg">
       <div class="text-h4 text-weight-bold">🏢 Admin Dashboard</div>
       <div class="text-subtitle1">Administrator Bereich - Aufgabenverwaltung</div>
@@ -84,7 +80,6 @@ async function submit() {
 
           <q-card-section class="q-pa-lg">
             <q-form @submit.prevent="submit" class="q-gutter-md">
-              <!-- Titel -->
               <q-input
                 v-model="titel"
                 label="Titel *"
@@ -95,7 +90,6 @@ async function submit() {
                 :rules="[val => !!val || 'Titel ist erforderlich']"
               />
 
-              <!-- Beschreibung -->
               <q-input
                 v-model="beschreibung"
                 label="Beschreibung"
@@ -106,7 +100,6 @@ async function submit() {
                 rows="3"
               />
 
-              <!-- Datum & Uhrzeit -->
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-sm-6">
                   <q-input
@@ -133,7 +126,6 @@ async function submit() {
               </div>
 
 
-              <!-- Submit Button -->
               <div class="q-pt-md">
                 <q-btn
                   label="Aufgabe erstellen"
@@ -153,7 +145,6 @@ async function submit() {
           </q-card-section>
         </q-card>
 
-        <!-- Schnellinfo Karte -->
         <q-card class="q-mt-md shadow-1">
           <q-card-section class="bg-blue-1">
             <div class="text-h6 text-blue-8 q-mb-sm">📋 Schnellinfo & Hilfe</div>
@@ -167,7 +158,6 @@ async function submit() {
           </q-card-section>
         </q-card>
 
-        <!-- Zurück Button -->
         <q-card class="q-mt-md shadow-1">
           <q-card-section class="text-center">
             <q-btn

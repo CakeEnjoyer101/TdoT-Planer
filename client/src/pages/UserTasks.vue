@@ -1,216 +1,263 @@
+<template>
+  <div class="user-tasks-page">
+    <header class="header">
+      <div class="header-left">
+        <button class="back-btn" @click="goBack">
+          <q-icon name="arrow_back" class="q-mr-xs" />
+          Zurück
+        </button>
+
+        <button class="logout-btn" @click="logout">
+          <q-icon name="logout" class="q-mr-xs" />
+          Abmelden
+        </button>
+      </div>
+
+      <h1>Meine Aufgaben</h1>
+
+      <div class="header-right" v-if="user">
+        <div class="user-info">
+          <div class="user-details">
+            <div class="user-klasse" :class="getBadgeClass()">
+              {{ getBadgeText() }}
+            </div>
+            <div class="user-name-section">
+              <q-icon :name="getUserIcon()" class="user-icon" />
+              <span class="user-name">{{ user.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right" v-else>
+        <q-spinner size="20px" />
+      </div>
+    </header>
+
+    <main class="content">
+      <div v-if="tasks.length === 0" class="no-tasks">
+        Du bist für derzeit keine Aufgaben angemeldet.
+      </div>
+
+      <div v-else class="tasks-list">
+        <q-card v-for="task in tasks" :key="task.aufgabeid" class="task-card">
+          <div class="task-title">{{ task.titel }}</div>
+          <div class="task-desc">{{ task.beschreibung }}</div>
+          <div class="task-meta">
+            <span v-if="task.datum"
+              ><q-icon name="event" /> {{ formatDate(task.datum) }}</span
+            >
+            <span v-if="task.uhrzeit"
+              ><q-icon name="schedule" />
+              {{ formatTime(task.uhrzeit) }} Uhr</span
+            >
+            <span v-if="task.lehrer_name"
+              ><q-icon name="school" /> {{ task.lehrer_name }}</span
+            >
+          </div>
+        </q-card>
+      </div>
+    </main>
+  </div>
+</template>
+
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import axios from "axios";
 
+const user = ref(null);
 const tasks = ref([]);
-const currentUser = ref(null);
 
-onMounted(async () => {
-  await loadUserProfile();
-  await loadUserTasks();
-});
-
-async function loadUserProfile() {
+const loadUser = async () => {
   try {
-    const response = await axios.get("http://localhost:3000/auth/profile", {
+    const res = await axios.get("http://localhost:3000/auth/profile", {
       withCredentials: true,
     });
-    currentUser.value = response.data.user;
-  } catch (error) {
-    console.error("Fehler beim Laden des Profils:", error);
+    user.value = res.data.user;
+  } catch (err) {
+    console.error(err);
+    window.location.href = "http://localhost:9000/";
   }
-}
+};
 
-async function loadUserTasks() {
+const loadTasks = async () => {
   try {
-    const response = await axios.get("http://localhost:3000/user/aufgaben", {
+    const res = await axios.get("http://localhost:3000/user/aufgaben", {
       withCredentials: true,
     });
-    tasks.value = response.data;
-  } catch (error) {
-    console.error("Fehler beim Laden der Aufgaben:", error);
+    tasks.value = res.data;
+  } catch (err) {
+    console.error(err);
+    tasks.value = [];
   }
-}
+};
 
-const isLehrer = computed(() => currentUser.value?.klasse === 'Lehrer');
-const isSchueler = computed(() => currentUser.value?.klasse && currentUser.value.klasse !== 'Admin' && currentUser.value.klasse !== 'Lehrer');
+const logout = async () => {
+  try {
+    await axios.post(
+      "http://localhost:3000/auth/logout",
+      {},
+      { withCredentials: true }
+    );
+    window.location.href = "http://localhost:9000/";
+  } catch (err) {
+    console.error(err);
+    window.location.href = "http://localhost:9000/";
+  }
+};
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("de-DE", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("de-DE");
 };
 
 const formatTime = (timeString) => {
   if (!timeString) return "";
   return timeString.substring(0, 5);
 };
+
+const getBadgeClass = () => {
+  if (!user.value) return "";
+  if (user.value.klasse === "Admin") return "admin-badge";
+  if (user.value.klasse === "Lehrer") return "lehrer-badge";
+  return "";
+};
+
+const getBadgeText = () => {
+  if (!user.value) return "";
+  if (user.value.klasse === "Admin") return "Admin Account";
+  if (user.value.klasse === "Lehrer") return "Lehrer Account";
+  return user.value.klasse;
+};
+
+const getUserIcon = () => {
+  if (!user.value) return "person";
+  if (user.value.klasse === "Admin") return "admin_panel_settings";
+  if (user.value.klasse === "Lehrer") return "school";
+  return "person";
+};
+
+onMounted(async () => {
+  await loadUser();
+  await loadTasks();
+});
+
+const goBack = () => {
+  window.location.href = "http://localhost:9000/main";
+};
 </script>
-
-<template>
-  <div class="user-tasks-page">
-    <!-- Header basierend auf Benutzertyp -->
-    <div class="text-center q-mb-md">
-      <div class="text-h5 text-weight-bold" :class="isLehrer ? 'text-orange-8' : 'text-red-7'">
-        {{ isLehrer ? '👨‍🏫 Meine übernommenen Aufgaben' : '📚 Meine angemeldeten Aufgaben' }}
-      </div>
-      <div class="text-caption text-grey-6">
-        {{ isLehrer ? 'Aufgaben, die Sie als Lehrkraft übernommen haben' : 'Aufgaben, für die Sie angemeldet sind' }}
-      </div>
-    </div>
-
-    <div class="row justify-center">
-      <div class="col-12 col-md-8">
-        <!-- Lehrer Ansicht -->
-        <div v-if="isLehrer">
-          <div v-if="tasks.length === 0" class="text-center q-pa-xl">
-            <q-icon name="assignment" color="orange-5" size="xl" />
-            <div class="text-h6 q-mt-md text-grey-7">Keine übernommenen Aufgaben</div>
-            <div class="text-caption text-grey-6">
-              Gehen Sie zur Hauptseite und übernehmen Sie Aufgaben als Lehrkraft
-            </div>
-          </div>
-
-          <div v-else class="q-gutter-y-md">
-            <q-card
-              v-for="task in tasks"
-              :key="task.aufgabeid"
-              class="task-card shadow-2 lehrer-card"
-            >
-              <q-card-section class="q-pa-md">
-                <div class="row items-center">
-                  <div class="col-3 text-center">
-                    <div class="date-badge bg-orange-7 text-white q-pa-sm rounded-borders">
-                      <div class="text-caption text-weight-bold">
-                        {{ new Date(task.datum).toLocaleDateString("de-DE", { weekday: "short" }) }}
-                      </div>
-                      <div class="text-h6 text-weight-bold">
-                        {{ new Date(task.datum).getDate() }}
-                      </div>
-                      <div class="text-caption">
-                        {{ new Date(task.datum).toLocaleDateString("de-DE", { month: "short" }) }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-9">
-                    <div class="text-h6 text-orange-8 text-weight-bold q-mb-xs">
-                      {{ task.titel }}
-                    </div>
-                    <div class="text-body2 text-grey-8 q-mb-xs">
-                      {{ task.beschreibung }}
-                    </div>
-                    <div v-if="task.uhrzeit" class="text-caption text-orange-6">
-                      <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                      {{ formatTime(task.uhrzeit) }} Uhr
-                    </div>
-                    <div class="text-caption text-grey-6 q-mt-xs">
-                      <q-icon name="event" size="14px" class="q-mr-xs" />
-                      {{ formatDate(task.datum) }}
-                    </div>
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Schüler Ansicht -->
-        <div v-else-if="isSchueler">
-          <div v-if="tasks.length === 0" class="text-center q-pa-xl">
-            <q-icon name="check_circle" color="green-5" size="xl" />
-            <div class="text-h6 q-mt-md text-grey-7">Keine angemeldeten Aufgaben</div>
-            <div class="text-caption text-grey-6">
-              Gehen Sie zur Hauptseite und melden Sie sich für Aufgaben an
-            </div>
-          </div>
-
-          <div v-else class="q-gutter-y-md">
-            <q-card
-              v-for="task in tasks"
-              :key="task.aufgabeid"
-              class="task-card shadow-2 schueler-card"
-            >
-              <q-card-section class="q-pa-md">
-                <div class="row items-center">
-                  <div class="col-3 text-center">
-                    <div class="date-badge bg-green-7 text-white q-pa-sm rounded-borders">
-                      <div class="text-caption text-weight-bold">
-                        {{ new Date(task.datum).toLocaleDateString("de-DE", { weekday: "short" }) }}
-                      </div>
-                      <div class="text-h6 text-weight-bold">
-                        {{ new Date(task.datum).getDate() }}
-                      </div>
-                      <div class="text-caption">
-                        {{ new Date(task.datum).toLocaleDateString("de-DE", { month: "short" }) }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-9">
-                    <div class="text-h6 text-green-8 text-weight-bold q-mb-xs">
-                      {{ task.titel }}
-                    </div>
-                    <div class="text-body2 text-grey-8 q-mb-xs">
-                      {{ task.beschreibung }}
-                    </div>
-                    <div v-if="task.uhrzeit" class="text-caption text-green-6">
-                      <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                      {{ formatTime(task.uhrzeit) }} Uhr
-                    </div>
-                    <div class="text-caption text-grey-6 q-mt-xs">
-                      <q-icon name="event" size="14px" class="q-mr-xs" />
-                      {{ formatDate(task.datum) }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                      <q-icon name="how_to_reg" size="14px" class="q-mr-xs" />
-                      Angemeldet am: {{ new Date(task.angemeldet_am).toLocaleDateString("de-DE") }}
-                    </div>
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Admin oder kein spezieller Typ -->
-        <div v-else class="text-center q-pa-xl">
-          <div class="text-h6 text-grey-7">Diese Seite ist für Schüler und Lehrer</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .user-tasks-page {
-  min-height: 100vh;
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e8eaf6 100%);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(211, 47, 47, 0.1);
+}
+
+.header h1 {
+  font-size: 36px;
+  background: linear-gradient(135deg, #d32f2f, #f44336);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logout-btn {
+  background: #f44336;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .task-card {
-  border-left: 4px solid #d32f2f;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.08);
+  background: #fff;
+}
+
+.task-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: #d32f2f;
+  margin-bottom: 8px;
+}
+
+.task-desc {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.task-meta span {
+  margin-right: 12px;
+  font-size: 12px;
+  color: #888;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-badge {
+  background: #7b1fa2;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.lehrer-badge {
+  background: #388e3c;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.user-name-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-icon {
+  color: #d32f2f;
+}
+
+.back-btn {
+  background: #fff;
+  color: #d32f2f;
+  border: 2px solid #d32f2f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.lehrer-card {
-  border-left: 4px solid #ff9800;
-}
-
-.schueler-card {
-  border-left: 4px solid #4caf50;
-}
-
-.task-card:hover {
+.back-btn:hover {
+  background: #d32f2f;
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-}
-
-.date-badge {
-  min-width: 60px;
 }
 </style>
