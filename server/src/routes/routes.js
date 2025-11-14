@@ -212,4 +212,32 @@ router.get(
   }),
 );
 
+router.get(
+  '/aufgaben/:aufgabeid/schueler',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.klasse !== 'Lehrer') {
+      return res.status(403).json({ error: 'Nur Lehrer können Schüler-Listen einsehen' });
+    }
+
+    const aufgabeid = parseInt(req.params.aufgabeid);
+    const schueler = await model.getAngemeldeteSchuelerFuerAufgabe(aufgabeid);
+    res.json(schueler);
+  }),
+);
+
+router.patch(
+  '/anmeldungen/:anmeldung_id/status',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.klasse !== 'Lehrer') {
+      return res.status(403).json({ error: 'Nur Lehrer können Status ändern' });
+    }
+
+    const { status } = req.body;
+    const updated = await model.updateSchuelerAnmeldungStatus(req.params.anmeldung_id, status);
+    res.json({ message: 'Status aktualisiert', anmeldung: updated });
+  }),
+);
+
 export default router;

@@ -103,15 +103,21 @@ export const lehrerFuerAufgabeAnmelden = async (lehrerUserid, aufgabeid) => {
   return result.rows[0];
 };
 
-// Angemeldete Aufgaben für Schüler holen
-export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
+export const getAngemeldeteSchuelerFuerAufgabe = async (aufgabeid) => {
   const result = await query(
-    `SELECT a.*, sa.angemeldet_am
-     FROM aufgabe a
-     JOIN schueler_aufgabe_anmeldung sa ON a.aufgabeid = sa.aufgabeid
-     WHERE sa.schueler_userid = $1
-     ORDER BY a.datum, a.uhrzeit`,
-    [schuelerUserid],
+    `SELECT
+       sa.anmeldung_id,
+       sa.schueler_userid,
+       sa.angemeldet_am,
+       sa.status,
+       u.name,
+       u.email,
+       u.klasse
+     FROM schueler_aufgabe_anmeldung sa
+     JOIN user_account u ON sa.schueler_userid = u.userid
+     WHERE sa.aufgabeid = $1
+     ORDER BY sa.angemeldet_am ASC`,
+    [aufgabeid],
   );
   return result.rows;
 };
@@ -125,6 +131,30 @@ export const getUebernommeneAufgabenFuerLehrer = async (lehrerUserid) => {
      WHERE a.lehrerid = $1
      ORDER BY a.datum, a.uhrzeit`,
     [lehrerUserid],
+  );
+  return result.rows;
+};
+
+export const updateSchuelerAnmeldungStatus = async (anmeldung_id, status) => {
+  const result = await query(
+    'UPDATE schueler_aufgabe_anmeldung SET status = $1 WHERE anmeldung_id = $2 RETURNING *',
+    [status, anmeldung_id]
+  );
+  return result.rows[0];
+};
+
+export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
+  const result = await query(
+    `SELECT
+       a.*,
+       sa.angemeldet_am,
+       sa.status,
+       sa.anmeldung_id
+     FROM aufgabe a
+     JOIN schueler_aufgabe_anmeldung sa ON a.aufgabeid = sa.aufgabeid
+     WHERE sa.schueler_userid = $1
+     ORDER BY a.datum, a.uhrzeit`,
+    [schuelerUserid],
   );
   return result.rows;
 };
