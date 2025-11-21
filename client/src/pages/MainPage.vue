@@ -276,7 +276,6 @@ export default {
       tasksLoaded: false,
       useFallbackTasks: false,
 
-      // Temporäre Tasks für verschiedene Klassen
       tempTasks: {
         secondThirdClass: [
           {
@@ -440,7 +439,6 @@ export default {
             lehrer_name: "Hr. Steiner",
           },
         ],
-        // Für 5. Klassen nur eine einfache Präsentations-Info
         fifthClass: [
           {
             aufgabeid: "temp-diplom-1",
@@ -474,7 +472,6 @@ export default {
       );
     },
 
-    // Klassen-Filter Logik
     isFirstClass() {
       if (!this.currentUser?.klasse) return false;
       const klasse = this.currentUser.klasse.toLowerCase();
@@ -531,15 +528,12 @@ export default {
     },
 
     filteredTasks() {
-      // Wenn keine Klasse gesetzt ist oder erste Klasse, keine Tasks anzeigen
       if (!this.currentUser?.klasse || this.isFirstClass) {
         return [];
       }
 
-      // Verwende Fallback-Tasks wenn Server keine Tasks hat oder Fallback aktiviert ist
       const useFallback = this.useFallbackTasks || this.tasks.length === 0;
 
-      // 2. und 3. Klassen: GameDev, Führungen, Chemielabor, Medientechnik
       if (this.isSecondClass || this.isThirdClass) {
         return useFallback
           ? this.tempTasks.secondThirdClass
@@ -552,7 +546,6 @@ export default {
             );
       }
 
-      // 4. Klassen Medientechnik: Foto, Video, Audio, 3D Labors
       if (this.isFourthClassMedientechnik) {
         return useFallback
           ? this.tempTasks.fourthClassMedientechnik
@@ -565,7 +558,6 @@ export default {
             );
       }
 
-      // 4. Klassen Netzwerktechnik: Netzwerklabors
       if (this.isFourthClassNetzwerktechnik) {
         return useFallback
           ? this.tempTasks.fourthClassNetzwerktechnik
@@ -577,7 +569,6 @@ export default {
             );
       }
 
-      // 4. Klassen Fachschule: Fachschule IT
       if (this.isFourthClassFachschule) {
         return useFallback
           ? this.tempTasks.fourthClassFachschule
@@ -589,7 +580,6 @@ export default {
             );
       }
 
-      // 5. Klassen: Diplomarbeit
       if (this.isFifthClass) {
         return useFallback
           ? this.tempTasks.fifthClass
@@ -600,7 +590,6 @@ export default {
             );
       }
 
-      // Admin und Lehrer sehen alle Aufgaben
       if (this.isAdminAccount() || this.isLehrerAccount()) {
         return useFallback
           ? [
@@ -629,7 +618,6 @@ export default {
         });
         this.currentUser = response.data.user;
 
-        // Prüfe ob Klasse bereits gesetzt ist (nur für Schüler, nicht für Lehrer/Admin)
         if (
           !this.currentUser.klasse &&
           !this.isLehrerAccount() &&
@@ -639,7 +627,6 @@ export default {
         }
       } catch (error) {
         console.error("Fehler beim Laden des User-Profils:", error);
-        // Fallback für Entwicklung
         this.currentUser = {
           name: "Demo Benutzer",
           klasse: "2AHIT",
@@ -686,7 +673,6 @@ export default {
 
         this.currentUser = response.data.user;
         this.showKlassePopup = false;
-        // Tasks neu laden nach Klassenzuordnung
         await this.loadTasks();
       } catch (error) {
         console.error("Fehler beim Speichern der Klasse:", error);
@@ -713,7 +699,6 @@ export default {
     async schuelerAnmelden() {
       if (!this.activeTask) return;
 
-      // Für temporäre Tasks zeigen wir eine andere Meldung
       if (
         this.activeTask.aufgabeid &&
         this.activeTask.aufgabeid.startsWith("temp-")
@@ -739,7 +724,6 @@ export default {
     async lehrerAnmelden() {
       if (!this.activeTask) return;
 
-      // Für temporäre Tasks zeigen wir eine andere Meldung
       if (
         this.activeTask.aufgabeid &&
         this.activeTask.aufgabeid.startsWith("temp-")
@@ -757,7 +741,6 @@ export default {
           { withCredentials: true }
         );
         alert("Aufgabe erfolgreich übernommen!");
-        // Aufgabe neu laden um Lehrer-Namen anzuzeigen
         await this.loadTasks();
       } catch (error) {
         alert(error.response?.data?.error || "Fehler bei der Übernahme");
@@ -776,7 +759,6 @@ export default {
         this.tasks = Array.isArray(response.data) ? response.data : [];
         this.tasksLoaded = true;
 
-        // Wenn keine Tasks in der Datenbank sind, verwende Fallback-Tasks
         if (this.tasks.length === 0) {
           this.useFallbackTasks = true;
           console.log("Keine Tasks in der Datenbank, verwende Fallback-Tasks");
