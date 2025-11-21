@@ -132,37 +132,42 @@
               {{ formatTime(activeTask.uhrzeit) }} Uhr
             </span>
             <span v-if="activeTask?.lehrer_name" class="meta-lehrer">
-            <span class="meta-icon">👨‍🏫</span>
-            {{ activeTask.lehrer_name }}
-          </span>
+              <span class="meta-icon">👨‍🏫</span>
+              {{ activeTask.lehrer_name }}
+            </span>
           </div>
         </div>
 
         <div class="info-action">
-           <button
-          v-if="currentUser && currentUser.klasse && currentUser.klasse !== 'Admin' && currentUser.klasse !== 'Lehrer'"
-          class="anmelde-btn"
-          @click="schuelerAnmelden"
-          :disabled="!activeTask"
-        >
-          <q-icon name="how_to_reg" class="q-mr-xs" />
-          Anmelden
-        </button>
+          <button
+            v-if="
+              currentUser &&
+              currentUser.klasse &&
+              currentUser.klasse !== 'Admin' &&
+              currentUser.klasse !== 'Lehrer'
+            "
+            class="anmelde-btn"
+            @click="schuelerAnmelden"
+            :disabled="!activeTask"
+          >
+            <q-icon name="how_to_reg" class="q-mr-xs" />
+            Anmelden
+          </button>
 
-        <button
-          v-if="currentUser && currentUser.klasse === 'Lehrer'"
-          class="lehrer-anmelde-btn"
-          @click="lehrerAnmelden"
-          :disabled="!activeTask"
-        >
-          <q-icon name="assignment_ind" class="q-mr-xs" />
-          Als Lehrkraft anmelden
-        </button>
+          <button
+            v-if="currentUser && currentUser.klasse === 'Lehrer'"
+            class="lehrer-anmelde-btn"
+            @click="lehrerAnmelden"
+            :disabled="!activeTask"
+          >
+            <q-icon name="assignment_ind" class="q-mr-xs" />
+            Als Lehrkraft anmelden
+          </button>
 
-        <button class="tasks-btn" @click="goToUserTasks">
-          <q-icon name="list_alt" class="q-mr-xs" />
-          Zu den Aufgaben
-        </button>
+          <button class="tasks-btn" @click="goToUserTasks">
+            <q-icon name="list_alt" class="q-mr-xs" />
+            Zu den Aufgaben
+          </button>
         </div>
       </section>
 
@@ -195,7 +200,7 @@ export default {
       visibleCount: 5,
       currentUser: null,
       showKlassePopup: false,
-      klasseInput: ""
+      klasseInput: "",
     };
   },
   computed: {
@@ -226,7 +231,11 @@ export default {
         this.currentUser = response.data.user;
 
         // Prüfe ob Klasse bereits gesetzt ist (nur für Schüler, nicht für Lehrer/Admin)
-        if (!this.currentUser.klasse && !this.isLehrerAccount() && !this.isAdminAccount()) {
+        if (
+          !this.currentUser.klasse &&
+          !this.isLehrerAccount() &&
+          !this.isAdminAccount()
+        ) {
           this.showKlassePopup = true;
         }
       } catch (error) {
@@ -236,29 +245,29 @@ export default {
     },
 
     isAdminAccount() {
-      return this.currentUser && this.currentUser.klasse === 'Admin';
+      return this.currentUser && this.currentUser.klasse === "Admin";
     },
 
     isLehrerAccount() {
-      return this.currentUser && this.currentUser.klasse === 'Lehrer';
+      return this.currentUser && this.currentUser.klasse === "Lehrer";
     },
 
     getBadgeClass() {
-      if (this.isAdminAccount()) return 'admin-badge';
-      if (this.isLehrerAccount()) return 'lehrer-badge';
-      return '';
+      if (this.isAdminAccount()) return "admin-badge";
+      if (this.isLehrerAccount()) return "lehrer-badge";
+      return "";
     },
 
     getBadgeText() {
-      if (this.isAdminAccount()) return 'Admin Account';
-      if (this.isLehrerAccount()) return 'Lehrer Account';
+      if (this.isAdminAccount()) return "Admin Account";
+      if (this.isLehrerAccount()) return "Lehrer Account";
       return this.currentUser.klasse;
     },
 
     getUserIcon() {
-      if (this.isAdminAccount()) return 'admin_panel_settings';
-      if (this.isLehrerAccount()) return 'school';
-      return 'person';
+      if (this.isAdminAccount()) return "admin_panel_settings";
+      if (this.isLehrerAccount()) return "school";
+      return "person";
     },
 
     async saveKlasse() {
@@ -273,7 +282,6 @@ export default {
 
         this.currentUser = response.data.user;
         this.showKlassePopup = false;
-
       } catch (error) {
         console.error("Fehler beim Speichern der Klasse:", error);
         alert("Fehler beim Speichern der Klasse. Bitte versuche es erneut.");
@@ -282,9 +290,13 @@ export default {
 
     async logout() {
       try {
-        await axios.post("http://localhost:3000/auth/logout", {}, {
-          withCredentials: true,
-        });
+        await axios.post(
+          "http://localhost:3000/auth/logout",
+          {},
+          {
+            withCredentials: true,
+          }
+        );
         window.location.href = "http://localhost:9000/";
       } catch (error) {
         console.error("Fehler beim Logout:", error);
@@ -301,9 +313,9 @@ export default {
           {},
           { withCredentials: true }
         );
-        alert('Erfolgreich für die Aufgabe angemeldet!');
+        alert("Erfolgreich für die Aufgabe angemeldet!");
       } catch (error) {
-        alert(error.response?.data?.error || 'Fehler bei der Anmeldung');
+        alert(error.response?.data?.error || "Fehler bei der Anmeldung");
       }
     },
 
@@ -316,11 +328,11 @@ export default {
           {},
           { withCredentials: true }
         );
-        alert('Aufgabe erfolgreich übernommen!');
+        alert("Aufgabe erfolgreich übernommen!");
         // Aufgabe neu laden um Lehrer-Namen anzuzeigen
         await this.loadTasks();
       } catch (error) {
-        alert(error.response?.data?.error || 'Fehler bei der Übernahme');
+        alert(error.response?.data?.error || "Fehler bei der Übernahme");
       }
     },
 
@@ -357,7 +369,8 @@ export default {
 
     prev() {
       if (!this.tasks.length) return;
-      this.currentIndex = (this.currentIndex - 1 + this.tasks.length) % this.tasks.length;
+      this.currentIndex =
+        (this.currentIndex - 1 + this.tasks.length) % this.tasks.length;
       this.ensureVisible(this.currentIndex);
     },
 
@@ -403,7 +416,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 8px 20px 60px;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
   color: #333;
   min-height: 100vh;
   box-sizing: border-box;
@@ -830,6 +843,7 @@ export default {
   justify-content: center;
   gap: 18px;
   margin-top: 28px;
+  padding-bottom: 20px;
 }
 
 .dots {
@@ -898,7 +912,8 @@ export default {
     width: 150px;
   }
 
-  .logout-btn, .admin-btn {
+  .logout-btn,
+  .admin-btn {
     padding: 8px 12px;
     font-size: 12px;
   }
@@ -1059,5 +1074,4 @@ export default {
   color: #ffcdd2;
   font-size: 14px;
 }
-
 </style>
