@@ -158,3 +158,30 @@ export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
   );
   return result.rows;
 };
+
+// Prüfen ob Lehrer bereits für eine Aufgabe angemeldet ist
+export const isLehrerAlreadyRegistered = async (lehrerid) => {
+  const result = await query(
+    'SELECT * FROM aufgabe WHERE lehrerid = $1',
+    [lehrerid]
+  );
+  return result.rows.length > 0;
+};
+
+// Lehrer von Aufgabe abmelden
+export const lehrerVonAufgabeAbmelden = async (lehrerid) => {
+  const result = await query(
+    'UPDATE aufgabe SET lehrerid = NULL WHERE lehrerid = $1 RETURNING *',
+    [lehrerid]
+  );
+  return result.rows[0];
+};
+
+// Aktuelle Aufgabe des Lehrers holen
+export const getAktuelleAufgabeFuerLehrer = async (lehrerid) => {
+  const result = await query(
+    'SELECT * FROM aufgabe WHERE lehrerid = $1',
+    [lehrerid]
+  );
+  return result.rows[0] || null;
+};

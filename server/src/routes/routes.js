@@ -184,14 +184,40 @@ router.post(
   ensureAuth,
   asyncHandler(async (req, res) => {
     const aufgabeid = parseInt(req.params.id);
-    const userid = req.user.userid;
 
     if (req.user.klasse === 'Lehrer' && req.user.lehrerid) {
+      // Prüfen ob Lehrer bereits für eine Aufgabe angemeldet ist
+      const bereitsAngemeldet = await model.isLehrerAlreadyRegistered(req.user.lehrerid);
+
+      if (bereitsAngemeldet) {
+        return res.status(400).json({
+          error:
+            'Sie sind bereits für eine Aufgabe angemeldet. Bitte melden Sie sich zuerst von der aktuellen Aufgabe ab.',
+        });
+      }
+
       const aufgabe = await model.lehrerFuerAufgabeAnmelden(req.user.lehrerid, aufgabeid);
       res.json({ message: 'Aufgabe erfolgreich übernommen', aufgabe });
     } else {
       res.status(403).json({ error: 'Nur Lehrer können Aufgaben übernehmen' });
     }
+  }),
+);
+
+// Neue Route: Lehrer von Aufgabe abmelden
+router.post(
+  '/lehrer/abmelden',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.klasse !== 'Lehrer' || !req.user.lehrerid) {
+      return res.status(403).json({ error: 'Nur Lehrer können sich abmelden' });
+    }
+
+    const result = await model.lehrerVonAufgabeAbmelden(req.user.lehrerid);
+    res.json({
+      message: 'Erfolgreich von der Aufgabe abgemeldet',
+      aufgabe: result,
+    });
   }),
 );
 
