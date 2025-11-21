@@ -75,114 +75,186 @@
     </header>
 
     <main class="content">
-      <section class="top-tabs">
-        <ul class="tabs-list" ref="tabsList">
-          <li
-            v-for="(task, i) in visibleTasks"
-            :key="task.aufgabeid || 'placeholder-' + i"
-            :class="['tab-item', { active: visibleStart + i === currentIndex }]"
-            @click="selectIndex(visibleStart + i)"
-          >
-            <span class="tab-title">{{ task?.titel || "Content" }}</span>
-            <span
-              class="underline"
-              v-if="visibleStart + i === currentIndex"
-            ></span>
-          </li>
-        </ul>
-      </section>
-
-      <section class="stage">
-        <button class="stage-arrow left" @click="prev">‹</button>
-
-        <div class="stage-inner">
-          <transition name="slide-fade" mode="out-in">
-            <div :key="currentIndex" class="image-placeholder">
-              <div class="placeholder-content">
-                <div class="placeholder-icon">📷</div>
-                <p class="placeholder-text">Bildvorschau</p>
-              </div>
-            </div>
-          </transition>
-        </div>
-
-        <button class="stage-arrow right" @click="next">›</button>
-      </section>
-
-      <section class="info-bar">
-        <div class="info-text">
-          <h3>
-            {{
-              activeTask?.titel || "Infos zum/zur entsprechenden/r Raum/Aufgabe"
-            }}
-          </h3>
-          <p class="info-desc">
-            {{
-              activeTask?.beschreibung ||
-              "Weitere Informationen zur Aufgabe erscheinen hier."
-            }}
+      <!-- Erste Klassen: Freier Tag -->
+      <div v-if="isFirstClass" class="free-day-container">
+        <div class="free-day-content">
+          <q-icon name="celebration" size="120px" color="green-6" />
+          <h2 class="free-day-title">Freier Tag!</h2>
+          <p class="free-day-message">
+            Als Schüler/in der 1. Klasse hast du heute frei und kannst den Tag
+            der offenen Tür genießen.
           </p>
-          <div class="info-meta">
-            <span v-if="activeTask?.datum" class="meta-date">
-              <span class="meta-icon">📅</span>
-              {{ formatDate(activeTask.datum) }}
-            </span>
-            <span v-if="activeTask?.uhrzeit" class="meta-time">
-              <span class="meta-icon">⏰</span>
-              {{ formatTime(activeTask.uhrzeit) }} Uhr
-            </span>
-            <span v-if="activeTask?.lehrer_name" class="meta-lehrer">
-              <span class="meta-icon">👨‍🏫</span>
-              {{ activeTask.lehrer_name }}
-            </span>
+          <div class="free-day-actions">
+            <button class="tasks-btn" @click="goToUserTasks">
+              <q-icon name="list_alt" class="q-mr-xs" />
+              Zu deinen Aufgaben
+            </button>
           </div>
         </div>
+      </div>
 
-        <div class="info-action">
-          <button
-            v-if="
-              currentUser &&
-              currentUser.klasse &&
-              currentUser.klasse !== 'Admin' &&
-              currentUser.klasse !== 'Lehrer'
-            "
-            class="anmelde-btn"
-            @click="schuelerAnmelden"
-            :disabled="!activeTask"
-          >
-            <q-icon name="how_to_reg" class="q-mr-xs" />
-            Anmelden
-          </button>
-
-          <button
-            v-if="currentUser && currentUser.klasse === 'Lehrer'"
-            class="lehrer-anmelde-btn"
-            @click="lehrerAnmelden"
-            :disabled="!activeTask"
-          >
-            <q-icon name="assignment_ind" class="q-mr-xs" />
-            Als Lehrkraft anmelden
-          </button>
-
-          <button class="tasks-btn" @click="goToUserTasks">
-            <q-icon name="list_alt" class="q-mr-xs" />
-            Zu den Aufgaben
-          </button>
+      <!-- Fünfte Klassen: Diplomarbeit Pflicht -->
+      <div v-else-if="isFifthClass" class="diplom-container">
+        <div class="diplom-content">
+          <q-icon name="school" size="120px" color="blue-6" />
+          <h2 class="diplom-title">Diplomarbeit Präsentation</h2>
+          <p class="diplom-message">
+            Als Schüler/in der 5. Klasse präsentierst du heute deine
+            Diplomarbeit. Diese Präsentation ist verpflichtend und findet den
+            ganzen Tag statt.
+          </p>
+          <div class="diplom-info">
+            <h3>Deine Aufgabe:</h3>
+            <div class="diplom-task-simple">
+              <q-icon name="presentation" size="60px" color="#1976d2" />
+              <div class="diplom-task-content">
+                <h4>Diplomarbeit Präsentation</h4>
+                <p>
+                  Präsentiere deine Diplomarbeit den ganzen Tag über an deinem
+                  zugewiesenen Stand.
+                </p>
+                <div class="diplom-task-meta">
+                  <span>
+                    <q-icon name="schedule" class="q-mr-xs" />
+                    Ganztägig
+                  </span>
+                  <span>
+                    <q-icon name="location_on" class="q-mr-xs" />
+                    Zugeteilter Stand
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="diplom-note">
+            <q-icon name="info" color="#1976d2" />
+            <p>
+              Die Präsentation deiner Diplomarbeit ist verpflichtend. Bitte
+              halte dich an deinen zugewiesenen Stand.
+            </p>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <section class="bottom-nav">
-        <ul class="dots">
-          <li
-            v-for="(t, idx) in tasks"
-            :key="idx"
-            class="dot"
-            :class="{ active: idx === currentIndex }"
-            @click="selectIndex(idx)"
-            :aria-label="'Slide ' + (idx + 1)"
-          ></li>
-        </ul>
-      </section>
+      <!-- Andere Klassen: Normale Ansicht -->
+      <template v-else>
+        <section class="top-tabs">
+          <ul class="tabs-list" ref="tabsList">
+            <li
+              v-for="(task, i) in visibleTasks"
+              :key="task.aufgabeid || 'placeholder-' + i"
+              :class="[
+                'tab-item',
+                { active: visibleStart + i === currentIndex },
+              ]"
+              @click="selectIndex(visibleStart + i)"
+            >
+              <span class="tab-title">{{ task?.titel || "Content" }}</span>
+              <span
+                class="underline"
+                v-if="visibleStart + i === currentIndex"
+              ></span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="stage">
+          <button class="stage-arrow left" @click="prev">‹</button>
+
+          <div class="stage-inner">
+            <transition name="slide-fade" mode="out-in">
+              <div :key="currentIndex" class="image-placeholder">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">
+                    {{ activeTask?.icon || "📷" }}
+                  </div>
+                  <p class="placeholder-text">
+                    {{ activeTask?.titel || "Bildvorschau" }}
+                  </p>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <button class="stage-arrow right" @click="next">›</button>
+        </section>
+
+        <section class="info-bar">
+          <div class="info-text">
+            <h3>
+              {{
+                activeTask?.titel ||
+                "Infos zum/zur entsprechenden/r Raum/Aufgabe"
+              }}
+            </h3>
+            <p class="info-desc">
+              {{
+                activeTask?.beschreibung ||
+                "Weitere Informationen zur Aufgabe erscheinen hier."
+              }}
+            </p>
+            <div class="info-meta">
+              <span v-if="activeTask?.datum" class="meta-date">
+                <span class="meta-icon">📅</span>
+                {{ formatDate(activeTask.datum) }}
+              </span>
+              <span v-if="activeTask?.uhrzeit" class="meta-time">
+                <span class="meta-icon">⏰</span>
+                {{ formatTime(activeTask.uhrzeit) }} Uhr
+              </span>
+              <span v-if="activeTask?.lehrer_name" class="meta-lehrer">
+                <span class="meta-icon">👨‍🏫</span>
+                {{ activeTask.lehrer_name }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-action">
+            <button
+              v-if="
+                currentUser &&
+                currentUser.klasse &&
+                currentUser.klasse !== 'Admin' &&
+                currentUser.klasse !== 'Lehrer'
+              "
+              class="anmelde-btn"
+              @click="schuelerAnmelden"
+              :disabled="!activeTask"
+            >
+              <q-icon name="how_to_reg" class="q-mr-xs" />
+              Anmelden
+            </button>
+
+            <button
+              v-if="currentUser && currentUser.klasse === 'Lehrer'"
+              class="lehrer-anmelde-btn"
+              @click="lehrerAnmelden"
+              :disabled="!activeTask"
+            >
+              <q-icon name="assignment_ind" class="q-mr-xs" />
+              Als Lehrkraft anmelden
+            </button>
+
+            <button class="tasks-btn" @click="goToUserTasks">
+              <q-icon name="list_alt" class="q-mr-xs" />
+              Zu den Aufgaben
+            </button>
+          </div>
+        </section>
+
+        <section class="bottom-nav">
+          <ul class="dots">
+            <li
+              v-for="(t, idx) in filteredTasks"
+              :key="idx"
+              class="dot"
+              :class="{ active: idx === currentIndex }"
+              @click="selectIndex(idx)"
+              :aria-label="'Slide ' + (idx + 1)"
+            ></li>
+          </ul>
+        </section>
+      </template>
     </main>
   </div>
 </template>
@@ -201,20 +273,347 @@ export default {
       currentUser: null,
       showKlassePopup: false,
       klasseInput: "",
+      tasksLoaded: false,
+      useFallbackTasks: false,
+
+      // Temporäre Tasks für verschiedene Klassen
+      tempTasks: {
+        secondThirdClass: [
+          {
+            aufgabeid: "temp-gamedev-1",
+            titel: "Game Development Präsentation",
+            beschreibung:
+              "Stelle unsere Game Development Projekte vor und erkläre Besuchern die Grundlagen der Spieleprogrammierung.",
+            kategorie: "gamedev",
+            icon: "🎮",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "09:00",
+            lehrer_name: "Hr. Müller",
+          },
+          {
+            aufgabeid: "temp-fuehrung-1",
+            titel: "Schulführung",
+            beschreibung:
+              "Führe Besuchergruppen durch das Schulgebäude und zeige ihnen unsere Einrichtungen.",
+            kategorie: "fuehrung",
+            icon: "🚶‍♂️",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "10:30",
+            lehrer_name: "Fr. Schmidt",
+          },
+          {
+            aufgabeid: "temp-chemie-1",
+            titel: "Chemielabor Experimente",
+            beschreibung:
+              "Demonstriere spannende chemische Experimente im Labor für interessierte Besucher.",
+            kategorie: "chemielabor",
+            icon: "🧪",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "11:45",
+            lehrer_name: "Hr. Weber",
+          },
+          {
+            aufgabeid: "temp-medientechnik-1",
+            titel: "Medientechnik Station",
+            beschreibung:
+              "Zeige unsere Medientechnik Ausrüstung und erkläre deren Anwendung in verschiedenen Projekten.",
+            kategorie: "medientechnik",
+            icon: "🎬",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "13:15",
+            lehrer_name: "Fr. Bauer",
+          },
+        ],
+        fourthClassMedientechnik: [
+          {
+            aufgabeid: "temp-foto-1",
+            titel: "Fotostudio Labor",
+            beschreibung:
+              "Betreue das Fotostudio und zeige Besuchern professionelle Fototechniken und Equipment.",
+            kategorie: "foto",
+            icon: "📸",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "09:30",
+            lehrer_name: "Hr. Fischer",
+          },
+          {
+            aufgabeid: "temp-video-1",
+            titel: "Videoproduktion Labor",
+            beschreibung:
+              "Demonstriere Videoproduktionstechniken und bearbeite Live-Aufnahmen mit Besuchern.",
+            kategorie: "video",
+            icon: "🎥",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "11:00",
+            lehrer_name: "Fr. Hoffmann",
+          },
+          {
+            aufgabeid: "temp-audio-1",
+            titel: "Audiotechnik Labor",
+            beschreibung:
+              "Zeige Aufnahmetechniken im Tonstudio und erkläre Audiobearbeitung mit professioneller Software.",
+            kategorie: "audio",
+            icon: "🎧",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "12:30",
+            lehrer_name: "Hr. Richter",
+          },
+          {
+            aufgabeid: "temp-3d-1",
+            titel: "3D Design Labor",
+            beschreibung:
+              "Präsentiere 3D-Modellierung und Drucktechnologien mit praktischen Beispielen.",
+            kategorie: "3d",
+            icon: "🖨️",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "14:00",
+            lehrer_name: "Fr. Neumann",
+          },
+        ],
+        fourthClassNetzwerktechnik: [
+          {
+            aufgabeid: "temp-netzwerk-1",
+            titel: "Netzwerklabor A",
+            beschreibung:
+              "Demonstriere Netzwerkkonfiguration und Troubleshooting an realen Netzwerkgeräten.",
+            kategorie: "netzwerklabor",
+            icon: "🌐",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "09:00",
+            lehrer_name: "Hr. Wagner",
+          },
+          {
+            aufgabeid: "temp-server-1",
+            titel: "Serverraum Betreuung",
+            beschreibung:
+              "Zeige unseren Serverraum und erkläre Serveradministration und -wartung.",
+            kategorie: "serverraum",
+            icon: "🖥️",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "10:45",
+            lehrer_name: "Fr. Becker",
+          },
+          {
+            aufgabeid: "temp-security-1",
+            titel: "Netzwerksicherheit",
+            beschreibung:
+              "Präsentiere Netzwerksicherheitskonzepte und praktische Sicherheitsmaßnahmen.",
+            kategorie: "netzwerktechnik",
+            icon: "🔒",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "12:15",
+            lehrer_name: "Hr. Schulz",
+          },
+        ],
+        fourthClassFachschule: [
+          {
+            aufgabeid: "temp-fitn-1",
+            titel: "Fachschule IT Präsentation",
+            beschreibung:
+              "Stelle die Schwerpunkte und Projekte der Fachschule für Informationstechnologie vor.",
+            kategorie: "fachschule",
+            icon: "💻",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "09:30",
+            lehrer_name: "Hr. Berger",
+          },
+          {
+            aufgabeid: "temp-fitn-2",
+            titel: "Praktische IT-Anwendungen",
+            beschreibung:
+              "Zeige praktische Anwendungen und Projekte aus dem Fachschulunterricht.",
+            kategorie: "fachschule",
+            icon: "🔧",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "11:15",
+            lehrer_name: "Fr. Weber",
+          },
+          {
+            aufgabeid: "temp-fitn-3",
+            titel: "Berufsperspektiven IT",
+            beschreibung:
+              "Informiere über Berufschancen und Weiterbildungsmöglichkeiten nach der Fachschule.",
+            kategorie: "fachschule",
+            icon: "🎯",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "13:00",
+            lehrer_name: "Hr. Steiner",
+          },
+        ],
+        // Für 5. Klassen nur eine einfache Präsentations-Info
+        fifthClass: [
+          {
+            aufgabeid: "temp-diplom-1",
+            titel: "Diplomarbeit Präsentation",
+            beschreibung:
+              "Präsentation deiner Diplomarbeit den ganzen Tag über",
+            kategorie: "diplomarbeit",
+            icon: "🎓",
+            datum: new Date().toISOString().split("T")[0],
+            uhrzeit: "08:00-16:00",
+            lehrer_name: "Betreuer/in",
+          },
+        ],
+      },
     };
   },
   computed: {
     activeTask() {
-      return this.tasks[this.currentIndex] || null;
+      return this.filteredTasks[this.currentIndex] || null;
     },
     visibleTasks() {
-      if (!this.tasks || this.tasks.length <= this.visibleCount) {
-        return this.tasks;
+      if (
+        !this.filteredTasks ||
+        this.filteredTasks.length <= this.visibleCount
+      ) {
+        return this.filteredTasks;
       }
-      return this.tasks.slice(
+      return this.filteredTasks.slice(
         this.visibleStart,
         this.visibleStart + this.visibleCount
       );
+    },
+
+    // Klassen-Filter Logik
+    isFirstClass() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return (
+        (klasse.startsWith("1") && klasse.includes("hit")) ||
+        (klasse.startsWith("1") && klasse.includes("fitn"))
+      );
+    },
+
+    isSecondClass() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return (
+        (klasse.startsWith("2") && klasse.includes("hit")) ||
+        (klasse.startsWith("2") && klasse.includes("fitn"))
+      );
+    },
+
+    isThirdClass() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return (
+        (klasse.startsWith("3") && klasse.includes("hitm")) ||
+        (klasse.startsWith("3") && klasse.includes("hitn")) ||
+        (klasse.startsWith("3") && klasse.includes("fitn"))
+      );
+    },
+
+    isFourthClassMedientechnik() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return klasse.startsWith("4") && klasse.includes("hitm");
+    },
+
+    isFourthClassNetzwerktechnik() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return klasse.startsWith("4") && klasse.includes("hitn");
+    },
+
+    isFourthClassFachschule() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return klasse.startsWith("4") && klasse.includes("fitn");
+    },
+
+    isFifthClass() {
+      if (!this.currentUser?.klasse) return false;
+      const klasse = this.currentUser.klasse.toLowerCase();
+      return (
+        (klasse.startsWith("5") && klasse.includes("hitm")) ||
+        (klasse.startsWith("5") && klasse.includes("hitn"))
+      );
+    },
+
+    filteredTasks() {
+      // Wenn keine Klasse gesetzt ist oder erste Klasse, keine Tasks anzeigen
+      if (!this.currentUser?.klasse || this.isFirstClass) {
+        return [];
+      }
+
+      // Verwende Fallback-Tasks wenn Server keine Tasks hat oder Fallback aktiviert ist
+      const useFallback = this.useFallbackTasks || this.tasks.length === 0;
+
+      // 2. und 3. Klassen: GameDev, Führungen, Chemielabor, Medientechnik
+      if (this.isSecondClass || this.isThirdClass) {
+        return useFallback
+          ? this.tempTasks.secondThirdClass
+          : this.tasks.filter(
+              (task) =>
+                task.kategorie === "gamedev" ||
+                task.kategorie === "fuehrung" ||
+                task.kategorie === "chemielabor" ||
+                task.kategorie === "medientechnik"
+            );
+      }
+
+      // 4. Klassen Medientechnik: Foto, Video, Audio, 3D Labors
+      if (this.isFourthClassMedientechnik) {
+        return useFallback
+          ? this.tempTasks.fourthClassMedientechnik
+          : this.tasks.filter(
+              (task) =>
+                task.kategorie === "foto" ||
+                task.kategorie === "video" ||
+                task.kategorie === "audio" ||
+                task.kategorie === "3d"
+            );
+      }
+
+      // 4. Klassen Netzwerktechnik: Netzwerklabors
+      if (this.isFourthClassNetzwerktechnik) {
+        return useFallback
+          ? this.tempTasks.fourthClassNetzwerktechnik
+          : this.tasks.filter(
+              (task) =>
+                task.kategorie === "netzwerklabor" ||
+                task.kategorie === "serverraum" ||
+                task.kategorie === "netzwerktechnik"
+            );
+      }
+
+      // 4. Klassen Fachschule: Fachschule IT
+      if (this.isFourthClassFachschule) {
+        return useFallback
+          ? this.tempTasks.fourthClassFachschule
+          : this.tasks.filter(
+              (task) =>
+                task.kategorie === "fachschule" ||
+                task.titel?.toLowerCase().includes("fachschule") ||
+                task.titel?.toLowerCase().includes("fitn")
+            );
+      }
+
+      // 5. Klassen: Diplomarbeit
+      if (this.isFifthClass) {
+        return useFallback
+          ? this.tempTasks.fifthClass
+          : this.tasks.filter(
+              (task) =>
+                task.kategorie === "diplomarbeit" ||
+                task.titel?.toLowerCase().includes("diplom")
+            );
+      }
+
+      // Admin und Lehrer sehen alle Aufgaben
+      if (this.isAdminAccount() || this.isLehrerAccount()) {
+        return useFallback
+          ? [
+              ...this.tempTasks.secondThirdClass,
+              ...this.tempTasks.fourthClassMedientechnik,
+              ...this.tempTasks.fourthClassNetzwerktechnik,
+              ...this.tempTasks.fourthClassFachschule,
+              ...this.tempTasks.fifthClass,
+            ]
+          : this.tasks;
+      }
+
+      return [];
     },
   },
   async mounted() {
@@ -240,7 +639,12 @@ export default {
         }
       } catch (error) {
         console.error("Fehler beim Laden des User-Profils:", error);
-        window.location.href = "http://localhost:9000/";
+        // Fallback für Entwicklung
+        this.currentUser = {
+          name: "Demo Benutzer",
+          klasse: "2AHIT",
+        };
+        this.showKlassePopup = true;
       }
     },
 
@@ -282,6 +686,8 @@ export default {
 
         this.currentUser = response.data.user;
         this.showKlassePopup = false;
+        // Tasks neu laden nach Klassenzuordnung
+        await this.loadTasks();
       } catch (error) {
         console.error("Fehler beim Speichern der Klasse:", error);
         alert("Fehler beim Speichern der Klasse. Bitte versuche es erneut.");
@@ -307,6 +713,17 @@ export default {
     async schuelerAnmelden() {
       if (!this.activeTask) return;
 
+      // Für temporäre Tasks zeigen wir eine andere Meldung
+      if (
+        this.activeTask.aufgabeid &&
+        this.activeTask.aufgabeid.startsWith("temp-")
+      ) {
+        alert(
+          "Diese Funktion ist für Demo-Aufgaben deaktiviert. Bei echten Aufgaben würdest du dich hier anmelden."
+        );
+        return;
+      }
+
       try {
         await axios.post(
           `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/anmelden`,
@@ -321,6 +738,17 @@ export default {
 
     async lehrerAnmelden() {
       if (!this.activeTask) return;
+
+      // Für temporäre Tasks zeigen wir eine andere Meldung
+      if (
+        this.activeTask.aufgabeid &&
+        this.activeTask.aufgabeid.startsWith("temp-")
+      ) {
+        alert(
+          "Diese Funktion ist für Demo-Aufgaben deaktiviert. Bei echten Aufgaben könntest du dich hier als Lehrkraft anmelden."
+        );
+        return;
+      }
 
       try {
         await axios.post(
@@ -346,31 +774,47 @@ export default {
           withCredentials: true,
         });
         this.tasks = Array.isArray(response.data) ? response.data : [];
-        if (this.currentIndex >= this.tasks.length) this.currentIndex = 0;
-        this.normalizeVisibleStart();
+        this.tasksLoaded = true;
+
+        // Wenn keine Tasks in der Datenbank sind, verwende Fallback-Tasks
+        if (this.tasks.length === 0) {
+          this.useFallbackTasks = true;
+          console.log("Keine Tasks in der Datenbank, verwende Fallback-Tasks");
+        } else {
+          this.useFallbackTasks = false;
+          console.log("Echte Tasks geladen:", this.tasks.length);
+        }
       } catch (error) {
         console.error("Fehler beim Laden der Aufgaben:", error);
         this.tasks = [];
+        this.useFallbackTasks = true;
+        console.log("Verwende Fallback-Tasks aufgrund Fehler");
       }
+
+      if (this.currentIndex >= this.filteredTasks.length) {
+        this.currentIndex = 0;
+      }
+      this.normalizeVisibleStart();
     },
 
     selectIndex(index) {
-      if (!this.tasks.length) return;
-      const idx = Math.max(0, Math.min(index, this.tasks.length - 1));
+      if (!this.filteredTasks.length) return;
+      const idx = Math.max(0, Math.min(index, this.filteredTasks.length - 1));
       this.currentIndex = idx;
       this.ensureVisible(idx);
     },
 
     next() {
-      if (!this.tasks.length) return;
-      this.currentIndex = (this.currentIndex + 1) % this.tasks.length;
+      if (!this.filteredTasks.length) return;
+      this.currentIndex = (this.currentIndex + 1) % this.filteredTasks.length;
       this.ensureVisible(this.currentIndex);
     },
 
     prev() {
-      if (!this.tasks.length) return;
+      if (!this.filteredTasks.length) return;
       this.currentIndex =
-        (this.currentIndex - 1 + this.tasks.length) % this.tasks.length;
+        (this.currentIndex - 1 + this.filteredTasks.length) %
+        this.filteredTasks.length;
       this.ensureVisible(this.currentIndex);
     },
 
@@ -384,7 +828,7 @@ export default {
     },
 
     normalizeVisibleStart() {
-      const max = Math.max(0, this.tasks.length - this.visibleCount);
+      const max = Math.max(0, this.filteredTasks.length - this.visibleCount);
       if (this.visibleStart > max) this.visibleStart = max;
       if (this.visibleStart < 0) this.visibleStart = 0;
     },
@@ -617,6 +1061,142 @@ export default {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
+.free-day-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 2px dashed #4caf50;
+}
+
+.free-day-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.free-day-title {
+  font-size: 2.5rem;
+  color: #2e7d32;
+  margin: 20px 0 10px;
+  font-weight: 700;
+}
+
+.free-day-message {
+  font-size: 1.2rem;
+  color: #388e3c;
+  margin-bottom: 30px;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.free-day-actions {
+  margin-top: 20px;
+}
+
+.diplom-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 2px solid #1976d2;
+  padding: 20px;
+}
+
+.diplom-content {
+  text-align: center;
+  padding: 40px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.diplom-title {
+  font-size: 2.5rem;
+  color: #1565c0;
+  margin: 20px 0 10px;
+  font-weight: 700;
+}
+
+.diplom-message {
+  font-size: 1.2rem;
+  color: #1976d2;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.diplom-info {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 30px 0;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.diplom-info h3 {
+  color: #1565c0;
+  margin-bottom: 24px;
+}
+
+.diplom-task-simple {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.diplom-task-content {
+  text-align: left;
+}
+
+.diplom-task-content h4 {
+  color: #333;
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+}
+
+.diplom-task-content p {
+  color: #666;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.diplom-task-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 0.9rem;
+  color: #757575;
+}
+
+.diplom-task-meta span {
+  display: flex;
+  align-items: center;
+}
+
+.diplom-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.diplom-note p {
+  margin: 0;
+  color: #1976d2;
+  font-size: 0.9rem;
+}
+
 .top-tabs {
   display: flex;
   align-items: center;
@@ -723,8 +1303,8 @@ export default {
 }
 
 .placeholder-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+  font-size: 64px;
+  margin-bottom: 16px;
 }
 
 .placeholder-text {
@@ -813,6 +1393,11 @@ export default {
   opacity: 0.9;
 }
 
+.meta-lehrer {
+  color: #ffcdd2;
+  font-size: 14px;
+}
+
 .info-action {
   display: flex;
   align-items: center;
@@ -835,6 +1420,50 @@ export default {
   background: transparent;
   color: white;
   transform: translateY(-2px);
+}
+
+.anmelde-btn {
+  background: #4caf50;
+  color: white;
+  border: 2px solid white;
+  padding: 12px 26px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.anmelde-btn:hover:not(:disabled) {
+  background: #388e3c;
+  transform: translateY(-2px);
+}
+
+.anmelde-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.lehrer-anmelde-btn {
+  background: #ff9800;
+  color: white;
+  border: 2px solid white;
+  padding: 12px 26px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.lehrer-anmelde-btn:hover:not(:disabled) {
+  background: #f57c00;
+  transform: translateY(-2px);
+}
+
+.lehrer-anmelde-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
 }
 
 .bottom-nav {
@@ -961,6 +1590,39 @@ export default {
     display: flex;
     justify-content: flex-end;
   }
+
+  .diplom-container {
+    margin: 10px 0;
+    padding: 10px;
+  }
+
+  .diplom-content {
+    padding: 20px;
+  }
+
+  .diplom-title {
+    font-size: 2rem;
+  }
+
+  .diplom-message {
+    font-size: 1rem;
+  }
+
+  .diplom-task-simple {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .diplom-task-content {
+    text-align: center;
+  }
+
+  .diplom-task-meta {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1024,54 +1686,22 @@ export default {
     flex-direction: column;
     gap: 8px;
   }
-}
 
-.anmelde-btn {
-  background: #4caf50;
-  color: white;
-  border: 2px solid white;
-  padding: 12px 26px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+  .free-day-container {
+    height: 300px;
+    margin: 10px 0;
+  }
 
-.anmelde-btn:hover:not(:disabled) {
-  background: #388e3c;
-  transform: translateY(-2px);
-}
+  .free-day-content {
+    padding: 20px;
+  }
 
-.anmelde-btn:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
+  .free-day-title {
+    font-size: 2rem;
+  }
 
-.lehrer-anmelde-btn {
-  background: #ff9800;
-  color: white;
-  border: 2px solid white;
-  padding: 12px 26px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.lehrer-anmelde-btn:hover:not(:disabled) {
-  background: #f57c00;
-  transform: translateY(-2px);
-}
-
-.lehrer-anmelde-btn:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
-
-.meta-lehrer {
-  color: #ffcdd2;
-  font-size: 14px;
+  .free-day-message {
+    font-size: 1rem;
+  }
 }
 </style>
