@@ -23,6 +23,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
 
+    console.log('📝 Registrierungsversuch:', { email, name });
+
     if (!email || !name || !password) {
       return res.status(400).json({ error: 'Email, Name und Passwort werden benötigt' });
     }
@@ -45,16 +47,12 @@ router.post(
         return res.status(400).json({ error: 'Diese Email kann nicht registriert werden' });
       }
 
-      const schuelerEmailRegex = /^[a-z]+\.[a-z][0-9]{2}@htlwienwest\.at$/;
-      const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
-
-      if (
-        !schuelerEmailRegex.test(email.toLowerCase()) &&
-        !lehrerEmailRegex.test(email.toLowerCase())
-      ) {
+      // Vereinfachte Email-Validierung
+      const emailParts = email.split('@')[0];
+      if (!emailParts.includes('.')) {
         return res.status(400).json({
           error:
-            'Ungültiges Email-Format. Erwartet: nachname.buchstabezahl@htlwienwest.at (Schüler) oder nachname.vorname@htlwienwest.at (Lehrer)',
+            'Ungültiges Email-Format. Erwartet: nachname.vorname@htlwienwest.at (Lehrer) oder nachname.buchstabezahl@htlwienwest.at (Schüler)',
         });
       }
     }
@@ -65,50 +63,68 @@ router.post(
     }
 
     let lehrerId = null;
-    if (!isAdminAccount) {
-      const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
-      const isLehrer = lehrerEmailRegex.test(email.toLowerCase());
+    let userKlasse = null;
 
-      if (isLehrer) {
-        const neuerLehrer = await model.createLehrer(name, 'Allgemein');
-        lehrerId = neuerLehrer.lehrerid;
-        console.log(`🎯 Neuer Lehrer erstellt: ${name} mit ID ${lehrerId}`);
+    if (!isAdminAccount) {
+      // Prüfe ob es ein Lehrer oder Schüler ist
+      const emailParts = email.split('@')[0].split('.');
+      const secondPart = emailParts[1] || '';
+
+      // Wenn der zweite Teil eine Zahl enthält (z.B. a01), ist es ein Schüler
+      const hasNumber = /\d/.test(secondPart);
+
+      if (!hasNumber) {
+        // Es ist ein Lehrer - erstelle Lehrer-Eintrag
+        try {
+          const neuerLehrer = await model.createLehrer(name, 'Allgemein');
+          lehrerId = neuerLehrer.lehrerid;
+          userKlasse = 'Lehrer';
+          console.log(`🎯 Neuer Lehrer erstellt: ${name} mit ID ${lehrerId}`);
+        } catch (err) {
+          console.error('Fehler beim Erstellen des Lehrers:', err);
+          // Falls Lehrer-Erstellung fehlschlägt, trotzdem Benutzer erstellen
+          userKlasse = 'Lehrer';
+        }
       }
+      // Schüler bekommen ihre Klasse später beim Login/Update
     }
 
-    const user = await model.createUser(email, name, password, lehrerId);
+    try {
+      // Erstelle den Benutzer mit der passenden Klasse
+      const user = await model.createUser(email, name, password, lehrerId);
 
-    if (isAdminAccount) {
-      console.log('🎯 Setting user as admin:', user.email);
-      await model.updateUserKlasse(user.userid, 'Admin');
-      await model.query('INSERT INTO admin (userid, role) VALUES ($1, $2)', [
-        user.userid,
-        'Super Admin',
-      ]);
-    } else {
-      const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
-      const isLehrer = lehrerEmailRegex.test(email.toLowerCase());
-
-      if (isLehrer) {
+      if (isAdminAccount) {
+        console.log('🎯 Setting user as admin:', user.email);
+        await model.updateUserKlasse(user.userid, 'Admin');
+        await model.query('INSERT INTO admin (userid, role) VALUES ($1, $2)', [
+          user.userid,
+          'Super Admin',
+        ]);
+      } else if (userKlasse === 'Lehrer') {
         await model.updateUserKlasse(user.userid, 'Lehrer');
       }
-    }
+      // Schüler bekommen ihre Klasse später
 
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({ error: 'Login nach Registrierung fehlgeschlagen' });
-      }
-      return res.status(201).json({
-        message: 'Registrierung erfolgreich',
-        user: {
-          userid: user.userid,
-          email: user.email,
-          name: user.name,
-          klasse: isAdminAccount ? 'Admin' : user.klasse || null,
-          lehrerid: user.lehrerid,
-        },
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login-Fehler nach Registrierung:', err);
+          return res.status(500).json({ error: 'Login nach Registrierung fehlgeschlagen' });
+        }
+        return res.status(201).json({
+          message: 'Registrierung erfolgreich',
+          user: {
+            userid: user.userid,
+            email: user.email,
+            name: user.name,
+            klasse: isAdminAccount ? 'Admin' : userKlasse || null,
+            lehrerid: lehrerId,
+          },
+        });
       });
-    });
+    } catch (err) {
+      console.error('Fehler bei der Registrierung:', err);
+      res.status(500).json({ error: 'Registrierung fehlgeschlagen' });
+    }
   }),
 );
 

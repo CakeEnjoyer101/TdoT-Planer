@@ -11,13 +11,14 @@ export const findUserById = async (userid) => {
   return result.rows[0];
 };
 
-export const createUser = async (email, name, password, lehrerid = null) => {
+export const createUser = async (email, name, password, lehrerid = null, klasse = null) => {
   const hashedPassword = await bcrypt.hash(password, 12);
 
   const result = await query(
-    `INSERT INTO user_account (email, name, password_hash, lehrerid) VALUES ($1, $2, $3, $4)
-     RETURNING userid, email, name, created_at, lehrerid`,
-    [email, name, hashedPassword, lehrerid],
+    `INSERT INTO user_account (email, name, password_hash, lehrerid, klasse)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING userid, email, name, created_at, lehrerid, klasse`,
+    [email, name, hashedPassword, lehrerid, klasse],
   );
   return result.rows[0];
 };
@@ -138,7 +139,7 @@ export const getUebernommeneAufgabenFuerLehrer = async (lehrerUserid) => {
 export const updateSchuelerAnmeldungStatus = async (anmeldung_id, status) => {
   const result = await query(
     'UPDATE schueler_aufgabe_anmeldung SET status = $1 WHERE anmeldung_id = $2 RETURNING *',
-    [status, anmeldung_id]
+    [status, anmeldung_id],
   );
   return result.rows[0];
 };
@@ -161,27 +162,20 @@ export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
 
 // Prüfen ob Lehrer bereits für eine Aufgabe angemeldet ist
 export const isLehrerAlreadyRegistered = async (lehrerid) => {
-  const result = await query(
-    'SELECT * FROM aufgabe WHERE lehrerid = $1',
-    [lehrerid]
-  );
+  const result = await query('SELECT * FROM aufgabe WHERE lehrerid = $1', [lehrerid]);
   return result.rows.length > 0;
 };
 
 // Lehrer von Aufgabe abmelden
 export const lehrerVonAufgabeAbmelden = async (lehrerid) => {
-  const result = await query(
-    'UPDATE aufgabe SET lehrerid = NULL WHERE lehrerid = $1 RETURNING *',
-    [lehrerid]
-  );
+  const result = await query('UPDATE aufgabe SET lehrerid = NULL WHERE lehrerid = $1 RETURNING *', [
+    lehrerid,
+  ]);
   return result.rows[0];
 };
 
 // Aktuelle Aufgabe des Lehrers holen
 export const getAktuelleAufgabeFuerLehrer = async (lehrerid) => {
-  const result = await query(
-    'SELECT * FROM aufgabe WHERE lehrerid = $1',
-    [lehrerid]
-  );
+  const result = await query('SELECT * FROM aufgabe WHERE lehrerid = $1', [lehrerid]);
   return result.rows[0] || null;
 };
