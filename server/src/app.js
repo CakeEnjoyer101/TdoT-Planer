@@ -29,10 +29,16 @@ app.use(express.json());
 
 app.use(
   session({
+    name: 'connect.sid',
     secret: process.env.SESSION_SECRET || 'some secret',
     resave: false,
     saveUninitialized: false,
-  }),
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+    },
+  })
 );
 
 app.use(passport.initialize());

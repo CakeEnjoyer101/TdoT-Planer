@@ -1,23 +1,25 @@
 import passport from 'passport';
 import dotenv from 'dotenv';
 import { Strategy as LocalStrategy } from 'passport-local';
-import * as model from '../model/model.js';
+import * as userModel from '../model/userModel.js';
 
 dotenv.config();
 
+/* ===== Session ===== */
 passport.serializeUser((user, done) => {
   done(null, user.userid);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await model.findUserById(id);
+    const user = await userModel.findUserById(id);
     done(null, user);
   } catch (err) {
     done(err);
   }
 });
 
+/* ===== Local Strategy ===== */
 passport.use(
   new LocalStrategy(
     {
@@ -26,7 +28,7 @@ passport.use(
     },
     async (email, password, done) => {
       try {
-        const user = await model.findUserByEmail(email.toLowerCase());
+        const user = await userModel.findUserByEmail(email.toLowerCase());
 
         if (!user) {
           return done(null, false, { message: 'Falsche Email oder Passwort' });
@@ -36,7 +38,10 @@ passport.use(
           return done(null, false, { message: 'Bitte registriere dich zuerst' });
         }
 
-        const isValidPassword = await model.verifyPassword(password, user.password_hash);
+        const isValidPassword = await userModel.verifyPassword(
+          password,
+          user.password_hash
+        );
 
         if (!isValidPassword) {
           return done(null, false, { message: 'Falsche Email oder Passwort' });
@@ -46,8 +51,8 @@ passport.use(
       } catch (err) {
         return done(err);
       }
-    },
-  ),
+    }
+  )
 );
 
 export default passport;
