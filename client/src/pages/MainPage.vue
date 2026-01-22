@@ -285,6 +285,7 @@ import axios from "axios";
 
 export default {
   name: "MainPage",
+
   data() {
     return {
       tasks: [],
@@ -300,10 +301,12 @@ export default {
       isLoading: true,
     };
   },
+
   computed: {
     activeTask() {
       return this.filteredTasks[this.currentIndex] || null;
     },
+
     visibleTasks() {
       if (
         !this.filteredTasks ||
@@ -319,26 +322,37 @@ export default {
 
     isFirstClass() {
       if (!this.currentUser?.klasse) return false;
-      const klasse = this.currentUser.klasse.toLowerCase();
-      return klasse.startsWith("1");
+      return this.currentUser.klasse.toLowerCase().startsWith("1");
     },
 
     isFifthClass() {
       if (!this.currentUser?.klasse) return false;
-      const klasse = this.currentUser.klasse.toLowerCase();
-      return klasse.startsWith("5");
+      return this.currentUser.klasse.toLowerCase().startsWith("5");
     },
 
     isAlreadyRegisteredForTask() {
       if (!this.activeTask || !this.currentUser?.userid) return false;
       return this.userRegisteredTasks.some(
-        (task) => task.aufgabeid === this.activeTask.aufgabeid
+        (t) => t.aufgabeid === this.activeTask.aufgabeid
       );
     },
 
+    /* =====================================================
+       ✅ ZENTRALE FILTER-LOGIK (ADMIN + LEHRER = ALLE TASKS)
+       ===================================================== */
     filteredTasks() {
+      if (!this.currentUser?.klasse) return [];
+
+      // 👑 ADMIN & 👨‍🏫 LEHRER → sehen ALLE Aufgaben
       if (
-        !this.currentUser?.klasse ||
+        this.currentUser.klasse === "Admin" ||
+        this.currentUser.klasse === "Lehrer"
+      ) {
+        return this.tasks;
+      }
+
+      // ❌ Sonderfälle Schüler
+      if (
         this.currentUser.klasse === "Keine Klasse" ||
         this.isFirstClass ||
         this.isFifthClass
@@ -348,25 +362,21 @@ export default {
 
       const userKlasse = this.currentUser.klasse.toLowerCase();
 
-      // Filtere Aufgaben basierend auf ziel_klassen Array
+      // 🎓 Schüler sehen nur passende Aufgaben
       return this.tasks.filter((task) => {
-        if (!task.ziel_klassen || !Array.isArray(task.ziel_klassen)) {
-          return false;
-        }
+        if (!task.ziel_klassen) return false;
 
-        // Prüfe ob die Klasse des Benutzers in den ziel_klassen enthalten ist
-        const userKlasseLower = userKlasse.toLowerCase();
-        return task.ziel_klassen.some((zielKlasse) => {
-          const zielKlasseLower = zielKlasse.toLowerCase();
-          // Prüfe auf exakte Übereinstimmung oder Teilübereinstimmung
-          return (
-            userKlasseLower.includes(zielKlasseLower) ||
-            zielKlasseLower.includes(userKlasseLower)
-          );
-        });
+        const zielKlassen = Array.isArray(task.ziel_klassen)
+          ? task.ziel_klassen
+          : [task.ziel_klassen];
+
+        return zielKlassen.some((ziel) =>
+          userKlasse.includes(ziel.toLowerCase())
+        );
       });
     },
   },
+
   async mounted() {
     this.isLoading = true;
     try {
@@ -376,118 +386,58 @@ export default {
       if (
         this.currentUser &&
         this.currentUser.klasse &&
-        this.currentUser.klasse !== "Keine Klasse"
+        this.currentUser.klasse !== "Keine Klasse" &&
+        this.currentUser.klasse !== "Admin" &&
+        this.currentUser.klasse !== "Lehrer"
       ) {
         await this.loadUserRegisteredTasks();
+      }
 
-        if (this.isFifthClass) {
-          await this.loadDiplomTask();
-        }
+      if (this.isFifthClass) {
+        await this.loadDiplomTask();
       }
 
       this.normalizeVisibleStart();
     } catch (error) {
-      console.error("Fehler beim Initialisieren:", error);
+      console.error("Init-Fehler:", error);
     } finally {
       this.isLoading = false;
     }
   },
+
   methods: {
+    /* ================= USER ================= */
     async loadUserProfile() {
       try {
-        const response = await axios.get("http://localhost:3000/auth/profile", {
+        const res = await axios.get("http://localhost:3000/auth/profile", {
           withCredentials: true,
         });
-        this.currentUser = response.data.user;
+        this.currentUser = res.data.user;
 
-        // Wenn keine Klasse gesetzt ist, zeige Popup
         if (
-          !this.currentUser.klasse &&
+          (!this.currentUser.klasse ||
+            this.currentUser.klasse === "") &&
           !this.isLehrerAccount() &&
           !this.isAdminAccount()
         ) {
-          this.klasseInput = "";
-          this.showKlassePopup = true;
-        } else if (
-          this.currentUser.klasse === null ||
-          this.currentUser.klasse === ""
-        ) {
-          this.klasseInput = "";
           this.showKlassePopup = true;
         }
-      } catch (error) {
-        console.error("Fehler beim Laden des User-Profils:", error);
-        // Falls nicht eingeloggt, zur Login-Seite
-        if (error.response?.status === 401) {
+      } catch (err) {
+        if (err.response?.status === 401) {
           window.location.href = "http://localhost:9000/";
         }
       }
     },
 
-    async loadUserRegisteredTasks() {
-      if (
-        !this.currentUser ||
-        this.isLehrerAccount() ||
-        this.isAdminAccount()
-      ) {
-        return;
-      }
-
-      try {
-        const response = await axios.get(
-          "http://localhost:3000/user/aufgaben",
-          { withCredentials: true }
-        );
-        this.userRegisteredTasks = response.data;
-      } catch (error) {
-        console.error("Fehler beim Laden der angemeldeten Aufgaben:", error);
-        this.userRegisteredTasks = [];
-      }
-    },
-
-    async loadDiplomTask() {
-      if (!this.currentUser?.klasse) return;
-
-      const userKlasse = this.currentUser.klasse.toLowerCase();
-
-      // Finde Diplomarbeit für die aktuelle Klasse
-      this.diplomTask = this.tasks.find((task) => {
-        if (!task.ziel_klassen || !Array.isArray(task.ziel_klassen)) {
-          return false;
-        }
-
-        return (
-          task.ziel_klassen.some((zielKlasse) => {
-            const zielKlasseLower = zielKlasse.toLowerCase();
-            return (
-              userKlasse.includes(zielKlasseLower) ||
-              zielKlasseLower.includes(userKlasse)
-            );
-          }) &&
-          (task.kategorie === "diplomarbeit" ||
-            task.titel?.toLowerCase().includes("diplom"))
-        );
-      });
-
-      if (!this.diplomTask) {
-        // Fallback: Erstelle eine generische Diplomarbeit
-        this.diplomTask = {
-          titel: "Diplomarbeit Präsentation",
-          beschreibung: "Präsentation deiner Diplomarbeit den ganzen Tag über.",
-          icon: "🎓",
-          uhrzeit: "08:00",
-        };
-      }
-    },
-
     isAdminAccount() {
-      return this.currentUser && this.currentUser.klasse === "Admin";
+      return this.currentUser?.klasse === "Admin";
     },
 
     isLehrerAccount() {
-      return this.currentUser && this.currentUser.klasse === "Lehrer";
+      return this.currentUser?.klasse === "Lehrer";
     },
 
+    /* ================= BADGES ================= */
     getBadgeClass() {
       if (this.isAdminAccount()) return "admin-badge";
       if (this.isLehrerAccount()) return "lehrer-badge";
@@ -497,7 +447,7 @@ export default {
     getBadgeText() {
       if (this.isAdminAccount()) return "Admin Account";
       if (this.isLehrerAccount()) return "Lehrer Account";
-      return this.currentUser.klasse;
+      return this.currentUser?.klasse || "";
     },
 
     getUserIcon() {
@@ -506,112 +456,15 @@ export default {
       return "person";
     },
 
-    async saveKlasse() {
-      if (!this.klasseInput.trim()) return;
-
-      try {
-        const response = await axios.post(
-          "http://localhost:3000/auth/update-klasse",
-          { klasse: this.klasseInput.trim() },
-          { withCredentials: true }
-        );
-
-        this.currentUser = response.data.user;
-        this.showKlassePopup = false;
-
-        // Nach dem Speichern der Klasse, lade alles neu
-        await this.loadTasks();
-        await this.loadUserRegisteredTasks();
-
-        if (this.isFifthClass) {
-          await this.loadDiplomTask();
-        }
-
-        this.currentIndex = 0;
-        this.normalizeVisibleStart();
-
-        alert("Klasse erfolgreich gespeichert!");
-      } catch (error) {
-        console.error("Fehler beim Speichern der Klasse:", error);
-        const errorMsg =
-          error.response?.data?.error ||
-          "Fehler beim Speichern der Klasse. Bitte versuche es erneut.";
-        alert(errorMsg);
-      }
-    },
-
-    async logout() {
-      try {
-        await axios.post(
-          "http://localhost:3000/auth/logout",
-          {},
-          {
-            withCredentials: true,
-          }
-        );
-        window.location.href = "http://localhost:9000/";
-      } catch (error) {
-        console.error("Fehler beim Logout:", error);
-        window.location.href = "http://localhost:9000/";
-      }
-    },
-
-    async schuelerAnmelden() {
-      if (!this.activeTask || !this.currentUser?.userid) return;
-
-      try {
-        await axios.post(
-          `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/anmelden`,
-          {},
-          { withCredentials: true }
-        );
-
-        alert("Erfolgreich für die Aufgabe angemeldet!");
-
-        // Aktualisiere die Liste der angemeldeten Aufgaben
-        await this.loadUserRegisteredTasks();
-      } catch (error) {
-        const errorMsg =
-          error.response?.data?.error || "Fehler bei der Anmeldung";
-        alert(errorMsg);
-      }
-    },
-
-    async lehrerAnmelden() {
-      if (!this.activeTask || !this.currentUser?.userid) return;
-
-      try {
-        await axios.post(
-          `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/lehrer-anmelden`,
-          {},
-          { withCredentials: true }
-        );
-
-        alert("Aufgabe erfolgreich übernommen!");
-
-        // Aktualisiere die Aufgabenliste
-        await this.loadTasks();
-      } catch (error) {
-        const errorMsg =
-          error.response?.data?.error || "Fehler bei der Übernahme";
-        alert(errorMsg);
-      }
-    },
-
-    goToAdminDashboard() {
-      window.location.href = "http://localhost:9000/admin";
-    },
-
+    /* ================= TASKS ================= */
     async loadTasks() {
       try {
-        const response = await axios.get("http://localhost:3000/aufgaben", {
+        const res = await axios.get("http://localhost:3000/aufgaben", {
           withCredentials: true,
         });
-        this.tasks = Array.isArray(response.data) ? response.data : [];
+        this.tasks = Array.isArray(res.data) ? res.data : [];
         this.tasksLoaded = true;
-        console.log("Aufgaben geladen:", this.tasks.length);
-      } catch (error) {
-        console.error("Fehler beim Laden der Aufgaben:", error);
+      } catch {
         this.tasks = [];
       }
 
@@ -621,16 +474,93 @@ export default {
       this.normalizeVisibleStart();
     },
 
-    selectIndex(index) {
+    async loadUserRegisteredTasks() {
+      try {
+        const res = await axios.get("http://localhost:3000/user/aufgaben", {
+          withCredentials: true,
+        });
+        this.userRegisteredTasks = res.data;
+      } catch {
+        this.userRegisteredTasks = [];
+      }
+    },
+
+    async loadDiplomTask() {
+      const userKlasse = this.currentUser.klasse.toLowerCase();
+
+      this.diplomTask =
+        this.tasks.find(
+          (t) =>
+            t.ziel_klassen?.some((z) =>
+              userKlasse.includes(z.toLowerCase())
+            ) &&
+            (t.kategorie === "diplomarbeit" ||
+              t.titel?.toLowerCase().includes("diplom"))
+        ) || {
+          titel: "Diplomarbeit Präsentation",
+          beschreibung: "Präsentation deiner Diplomarbeit den ganzen Tag.",
+          icon: "🎓",
+          uhrzeit: "08:00",
+        };
+    },
+
+    /* ================= ACTIONS ================= */
+    async schuelerAnmelden() {
+      if (!this.activeTask) return;
+
+      await axios.post(
+        `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/anmelden`,
+        {},
+        { withCredentials: true }
+      );
+
+      await this.loadUserRegisteredTasks();
+    },
+
+    async lehrerAnmelden() {
+      if (!this.activeTask) return;
+
+      await axios.post(
+        `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/lehrer-anmelden`,
+        {},
+        { withCredentials: true }
+      );
+
+      await this.loadTasks();
+    },
+
+    /* ================= NAVIGATION ================= */
+    goToAdminDashboard() {
+      window.location.href = "http://localhost:9000/admin";
+    },
+
+    goToUserTasks() {
+      window.location.href = "http://localhost:9000/user";
+    },
+
+    async logout() {
+      await axios.post(
+        "http://localhost:3000/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+      window.location.href = "http://localhost:9000/";
+    },
+
+    /* ================= SLIDER ================= */
+    selectIndex(idx) {
       if (!this.filteredTasks.length) return;
-      const idx = Math.max(0, Math.min(index, this.filteredTasks.length - 1));
-      this.currentIndex = idx;
-      this.ensureVisible(idx);
+      this.currentIndex = Math.max(
+        0,
+        Math.min(idx, this.filteredTasks.length - 1)
+      );
+      this.ensureVisible(this.currentIndex);
     },
 
     next() {
       if (!this.filteredTasks.length) return;
-      this.currentIndex = (this.currentIndex + 1) % this.filteredTasks.length;
+      this.currentIndex =
+        (this.currentIndex + 1) % this.filteredTasks.length;
       this.ensureVisible(this.currentIndex);
     },
 
@@ -657,30 +587,17 @@ export default {
       if (this.visibleStart < 0) this.visibleStart = 0;
     },
 
-    formatDate(dateString) {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+    formatDate(d) {
+      return new Date(d).toLocaleDateString("de-DE");
     },
 
-    formatTime(timeString) {
-      if (!timeString) return "";
-      // Entferne Sekunden falls vorhanden
-      return typeof timeString === "string"
-        ? timeString.substring(0, 5)
-        : timeString;
-    },
-
-    goToUserTasks() {
-      window.location.href = "http://localhost:9000/user";
+    formatTime(t) {
+      return typeof t === "string" ? t.substring(0, 5) : "";
     },
   },
 };
 </script>
+
 
 <style scoped>
 .main-page {
@@ -1331,11 +1248,15 @@ export default {
 }
 
 .slide-fade-enter-active {
-  transition: opacity 360ms ease, transform 360ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition:
+    opacity 360ms ease,
+    transform 360ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .slide-fade-leave-active {
-  transition: opacity 240ms ease, transform 240ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition:
+    opacity 240ms ease,
+    transform 240ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .slide-fade-enter-from {
