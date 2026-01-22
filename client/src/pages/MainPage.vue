@@ -429,6 +429,29 @@ export default {
       }
     },
 
+    async saveKlasse() {
+  if (!this.klasseInput) return;
+
+  try {
+    await axios.post(
+      "http://localhost:3000/auth/update-klasse",
+      { klasse: this.klasseInput },
+      { withCredentials: true }
+    );
+
+    // lokal updaten
+    this.currentUser.klasse = this.klasseInput;
+    this.showKlassePopup = false;
+    this.klasseInput = "";
+
+    // optional: Tasks neu laden
+    await this.loadTasks();
+  } catch (err) {
+    console.error("Fehler beim Speichern der Klasse", err);
+  }
+},
+
+
     isAdminAccount() {
       return this.currentUser?.klasse === "Admin";
     },

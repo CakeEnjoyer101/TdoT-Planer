@@ -240,14 +240,12 @@ router.get(
     const user = await model.verifyEmailByToken(token);
 
     if (!user) {
-      return res
-        .status(400)
-        .send('Ungültiger oder abgelaufener Bestätigungslink');
+      return res.status(400).send('Token ungültig oder abgelaufen');
     }
 
-    // optional: direkt auf Frontend weiterleiten
-    return res.redirect('http://localhost:9000/?verified=1');
-  }),
+    // Weiterleitung zum Login mit Erfolg
+    res.redirect('http://localhost:9000/?verified=1');
+  })
 );
 
 
