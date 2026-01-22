@@ -42,6 +42,13 @@ passport.use(
           return done(null, false, { message: 'Falsche Email oder Passwort' });
         }
 
+        // 📧 EMAIL VERIFIKATION
+        if (!user.email_verified) {
+          return done(null, false, {
+            message: 'Bitte bestätige zuerst deine E-Mail',
+          });
+        }
+
         return done(null, user);
       } catch (err) {
         return done(err);

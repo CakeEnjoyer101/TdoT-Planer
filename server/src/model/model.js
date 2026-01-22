@@ -179,3 +179,66 @@ export const getAktuelleAufgabeFuerLehrer = async (lehrerid) => {
   const result = await query('SELECT * FROM aufgabe WHERE lehrerid = $1', [lehrerid]);
   return result.rows[0] || null;
 };
+
+// 👑 ADMIN: alle Aufgaben inkl. zugewiesenem Lehrer
+export const getAlleAufgabenMitLehrer = async () => {
+  const result = await query(
+    `
+    SELECT
+      a.aufgabeid,
+      a.titel,
+      a.beschreibung,
+      a.datum,
+      a.uhrzeit,
+      l.lehrerid,
+      l.name AS lehrer_name
+    FROM aufgabe a
+    LEFT JOIN lehrer l ON a.lehrerid = l.lehrerid
+    ORDER BY a.datum, a.uhrzeit
+    `
+  );
+
+  return result.rows;
+};
+
+import crypto from 'crypto';
+
+// Token setzen
+export const setEmailVerificationToken = async (userid) => {
+  const token = crypto.randomBytes(32).toString('hex');
+
+  await query(
+    `UPDATE user_account
+     SET email_token = $1,
+         email_token_expires = NOW() + INTERVAL '24 hours'
+     WHERE userid = $2`,
+    [token, userid]
+  );
+
+  return token;
+};
+
+// Token prüfen
+export const verifyEmailByToken = async (token) => {
+  const result = await query(
+    `SELECT * FROM user_account
+     WHERE email_token = $1
+       AND email_token_expires > NOW()`,
+    [token]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const user = result.rows[0];
+
+  await query(
+    `UPDATE user_account
+     SET email_verified = true,
+         email_token = NULL,
+         email_token_expires = NULL
+     WHERE userid = $1`,
+    [user.userid]
+  );
+
+  return user;
+};

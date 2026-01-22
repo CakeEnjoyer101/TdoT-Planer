@@ -5,9 +5,13 @@ import axios from "axios";
 const email = ref("");
 const password = ref("");
 const name = ref("");
+
 const error = ref(null);
+const success = ref(null);
 const isLoading = ref(false);
 const isRegister = ref(false);
+
+/* ================= VALIDIERUNG ================= */
 
 const isEmailValid = computed(() => {
   if (!isRegister.value || !email.value) return true;
@@ -23,31 +27,23 @@ const isEmailValid = computed(() => {
 
 const isLehrerEmail = computed(() => {
   if (!isRegister.value || !email.value) return false;
-
-  const lehrerEmailRegex = /^[a-z]+\.[a-z]+@htlwienwest\.at$/;
-  return lehrerEmailRegex.test(email.value.toLowerCase());
+  return /^[a-z]+\.[a-z]+@htlwienwest\.at$/.test(email.value.toLowerCase());
 });
 
 const emailHint = computed(() => {
   if (!isRegister.value) return "";
-
-  if (email.value && !isEmailValid.value) {
-    return;
-  }
-
-  if (isLehrerEmail.value) {
-    return "Lehrer-Account erkannt";
-  }
-
+  if (email.value && !isEmailValid.value) return "";
+  if (isLehrerEmail.value) return "Lehrer-Account erkannt";
   return "";
 });
 
+/* ================= SUBMIT ================= */
+
 async function handleSubmit() {
   error.value = null;
+  success.value = null;
 
-  if (isRegister.value && !isEmailValid.value) {
-    return;
-  }
+  if (isRegister.value && !isEmailValid.value) return;
 
   isLoading.value = true;
 
@@ -63,7 +59,12 @@ async function handleSubmit() {
         { withCredentials: true }
       );
 
-      window.location.href = "http://localhost:9000/main";
+      success.value =
+        "Registrierung erfolgreich! Bitte prüfe dein E-Mail-Postfach und bestätige deinen Account.";
+      isRegister.value = false;
+
+      password.value = "";
+      name.value = "";
     } else {
       await axios.post(
         "http://localhost:3000/auth/login",
@@ -86,6 +87,7 @@ async function handleSubmit() {
 function toggleMode() {
   isRegister.value = !isRegister.value;
   error.value = null;
+  success.value = null;
   email.value = "";
   password.value = "";
   name.value = "";
@@ -107,84 +109,83 @@ function toggleMode() {
             <div class="text-h6 text-grey-8">Aufgaben Planer</div>
           </div>
 
-          <div class="q-mt-xl">
-            <h4 class="text-h4 text-red-7 q-mb-lg">
-              {{ isRegister ? "Registrieren" : "Anmelden" }}
-            </h4>
+          <h4 class="text-h4 text-red-7 q-mb-lg">
+            {{ isRegister ? "Registrieren" : "Anmelden" }}
+          </h4>
 
-            <q-form @submit.prevent="handleSubmit" class="q-gutter-md">
-              <q-input
-                v-model="email"
-                label="Email"
-                type="email"
-                required
-                color="red-7"
-                outlined
-                :rules="[(val) => !!val || 'Email ist erforderlich']"
-                :hint="emailHint"
-                :error="isRegister && email && !isEmailValid"
-                :class="{ 'lehrer-email': isLehrerEmail }"
-              />
+          <q-form @submit.prevent="handleSubmit" class="q-gutter-md">
+            <q-input
+              v-model="email"
+              label="Email"
+              type="email"
+              outlined
+              required
+              color="red-7"
+              :hint="emailHint"
+              :error="isRegister && email && !isEmailValid"
+              :rules="[(v) => !!v || 'Email ist erforderlich']"
+              :class="{ 'lehrer-email': isLehrerEmail }"
+            />
 
-              <q-input
-                v-if="isRegister"
-                v-model="name"
-                label="Vollständiger Name"
-                required
-                color="red-7"
-                outlined
-                :rules="[(val) => !!val || 'Name ist erforderlich']"
-              />
+            <q-input
+              v-if="isRegister"
+              v-model="name"
+              label="Vollständiger Name"
+              outlined
+              required
+              color="red-7"
+              :rules="[(v) => !!v || 'Name ist erforderlich']"
+            />
 
-              <q-input
-                v-model="password"
-                label="Passwort"
-                type="password"
-                required
-                color="red-7"
-                outlined
-                :placeholder="
-                  isRegister ? 'Mindestens 6 Zeichen' : 'Dein Passwort'
-                "
-                :rules="[
-                  (val) => !!val || 'Passwort ist erforderlich',
-                  (val) =>
-                    !isRegister || val.length >= 6 || 'Mindestens 6 Zeichen',
-                ]"
-              />
+            <q-input
+              v-model="password"
+              label="Passwort"
+              type="password"
+              outlined
+              required
+              color="red-7"
+              :placeholder="isRegister ? 'Mindestens 6 Zeichen' : 'Dein Passwort'"
+              :rules="[
+                (v) => !!v || 'Passwort ist erforderlich',
+                (v) => !isRegister || v.length >= 6 || 'Mindestens 6 Zeichen',
+              ]"
+            />
 
-              <q-btn
-                :label="isRegister ? 'Registrieren' : 'Anmelden'"
-                type="submit"
-                :loading="isLoading"
-                color="red-7"
-                class="full-width q-mb-md"
-                size="lg"
-                :icon="isRegister ? 'person_add' : 'login'"
-              />
+            <q-btn
+              type="submit"
+              size="lg"
+              color="red-7"
+              class="full-width"
+              :loading="isLoading"
+              :icon="isRegister ? 'person_add' : 'login'"
+              :label="isRegister ? 'Registrieren' : 'Anmelden'"
+            />
 
-              <q-btn
-                :label="
-                  isRegister ? 'Zurück zum Login' : 'Noch keinen Account?'
-                "
-                @click="toggleMode"
-                color="red-5"
-                class="full-width"
-                size="md"
-                outline
-              />
-            </q-form>
-          </div>
+            <q-btn
+              flat
+              color="red-5"
+              class="full-width"
+              @click="toggleMode"
+              :label="isRegister ? 'Zurück zum Login' : 'Noch keinen Account?'"
+            />
+          </q-form>
 
           <div
             v-if="error"
-            class="text-red-5 q-mt-md q-pa-sm bg-red-1 rounded-borders"
+            class="text-red-7 q-mt-md q-pa-sm bg-red-1 rounded-borders"
           >
             {{ error }}
           </div>
 
+          <div
+            v-if="success"
+            class="text-green-8 q-mt-md q-pa-sm bg-green-1 rounded-borders"
+          >
+            {{ success }}
+          </div>
+
           <div class="q-mt-xl text-caption text-grey-6">
-            HTL Wien West - Organisiere deine Aufgaben effizient
+            HTL Wien West – Organisiere deine Aufgaben effizient
           </div>
         </q-card-section>
       </q-card>
@@ -193,8 +194,8 @@ function toggleMode() {
 </template>
 
 <style scoped>
-.login-page {
-  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+.full-height {
+  min-height: 100vh;
 }
 
 .login-card {
@@ -206,18 +207,14 @@ function toggleMode() {
   width: 100px;
   height: 100px;
   border-radius: 50%;
+  border: 4px solid white;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid white;
   box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
 }
 
-.full-height {
-  min-height: 100vh;
-}
-
-/* Grüne Umrandung für Lehrer-Emails */
+/* Lehrer-Mail grün */
 :deep(.lehrer-email .q-field__control) {
   border-color: #388e3c !important;
 }

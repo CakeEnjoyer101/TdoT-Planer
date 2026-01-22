@@ -3,6 +3,7 @@ import passport from 'passport';
 import asyncHandler from 'express-async-handler';
 import * as controller from '../controller/controller.js';
 import * as model from '../model/model.js';
+import { sendVerificationMail } from '../services/mailService.js';
 
 const router = express.Router();
 
@@ -23,8 +24,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
 
-    console.log('📝 Registrierungsversuch:', { email, name });
-
     if (!email || !name || !password) {
       return res.status(400).json({ error: 'Email, Name und Passwort werden benötigt' });
     }
@@ -37,26 +36,6 @@ router.post(
       return res.status(400).json({ error: 'Nur HTL Wien West Emails sind erlaubt' });
     }
 
-    const isAdminAccount =
-      email.toLowerCase() === 'admin@htlwienwest.at' && password === 'Admin123!';
-
-    if (isAdminAccount) {
-      console.log('🔐 ADMIN ACCOUNT REGISTRATION DETECTED');
-    } else {
-      if (email.toLowerCase() === 'admin@htlwienwest.at') {
-        return res.status(400).json({ error: 'Diese Email kann nicht registriert werden' });
-      }
-
-      // Vereinfachte Email-Validierung
-      const emailParts = email.split('@')[0];
-      if (!emailParts.includes('.')) {
-        return res.status(400).json({
-          error:
-            'Ungültiges Email-Format. Erwartet: nachname.vorname@htlwienwest.at (Lehrer) oder nachname.buchstabezahl@htlwienwest.at (Schüler)',
-        });
-      }
-    }
-
     const existingUser = await model.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Email bereits registriert' });
@@ -65,67 +44,33 @@ router.post(
     let lehrerId = null;
     let userKlasse = null;
 
-    if (!isAdminAccount) {
-      // Prüfe ob es ein Lehrer oder Schüler ist
-      const emailParts = email.split('@')[0].split('.');
-      const secondPart = emailParts[1] || '';
+    // Lehrer erkennen
+    const emailParts = email.split('@')[0].split('.');
+    const secondPart = emailParts[1] || '';
+    const hasNumber = /\d/.test(secondPart);
 
-      // Wenn der zweite Teil eine Zahl enthält (z.B. a01), ist es ein Schüler
-      const hasNumber = /\d/.test(secondPart);
-
-      if (!hasNumber) {
-        // Es ist ein Lehrer - erstelle Lehrer-Eintrag
-        try {
-          const neuerLehrer = await model.createLehrer(name, 'Allgemein');
-          lehrerId = neuerLehrer.lehrerid;
-          userKlasse = 'Lehrer';
-          console.log(`🎯 Neuer Lehrer erstellt: ${name} mit ID ${lehrerId}`);
-        } catch (err) {
-          console.error('Fehler beim Erstellen des Lehrers:', err);
-          // Falls Lehrer-Erstellung fehlschlägt, trotzdem Benutzer erstellen
-          userKlasse = 'Lehrer';
-        }
-      }
-      // Schüler bekommen ihre Klasse später beim Login/Update
+    if (!hasNumber) {
+      const neuerLehrer = await model.createLehrer(name, 'Allgemein');
+      lehrerId = neuerLehrer.lehrerid;
+      userKlasse = 'Lehrer';
     }
 
-    try {
-      // Erstelle den Benutzer mit der passenden Klasse
-      const user = await model.createUser(email, name, password, lehrerId);
+    // 👤 USER ERSTELLEN
+    const user = await model.createUser(email, name, password, lehrerId);
 
-      if (isAdminAccount) {
-        console.log('🎯 Setting user as admin:', user.email);
-        await model.updateUserKlasse(user.userid, 'Admin');
-        await model.query('INSERT INTO admin (userid, role) VALUES ($1, $2)', [
-          user.userid,
-          'Super Admin',
-        ]);
-      } else if (userKlasse === 'Lehrer') {
-        await model.updateUserKlasse(user.userid, 'Lehrer');
-      }
-      // Schüler bekommen ihre Klasse später
-
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Login-Fehler nach Registrierung:', err);
-          return res.status(500).json({ error: 'Login nach Registrierung fehlgeschlagen' });
-        }
-        return res.status(201).json({
-          message: 'Registrierung erfolgreich',
-          user: {
-            userid: user.userid,
-            email: user.email,
-            name: user.name,
-            klasse: isAdminAccount ? 'Admin' : userKlasse || null,
-            lehrerid: lehrerId,
-          },
-        });
-      });
-    } catch (err) {
-      console.error('Fehler bei der Registrierung:', err);
-      res.status(500).json({ error: 'Registrierung fehlgeschlagen' });
+    if (userKlasse === 'Lehrer') {
+      await model.updateUserKlasse(user.userid, 'Lehrer');
     }
-  }),
+
+    // 📧 EMAIL VERIFIKATION
+    const token = await model.setEmailVerificationToken(user.userid);
+    await sendVerificationMail(user.email, token);
+
+    // ❌ KEIN LOGIN
+    return res.status(201).json({
+      message: 'Registrierung erfolgreich. Bitte E-Mail bestätigen.',
+    });
+  })
 );
 
 router.post('/auth/login', (req, res, next) => {
@@ -159,6 +104,7 @@ router.post('/auth/logout', controller.logout);
 
 router.get('/aufgaben', ensureAuth, asyncHandler(controller.getAufgaben));
 router.post('/aufgaben', ensureAuth, ensureAdmin, asyncHandler(controller.createAufgabe));
+
 
 router.post(
   '/auth/update-klasse',
@@ -281,5 +227,29 @@ router.patch(
     res.json({ message: 'Status aktualisiert', anmeldung: updated });
   }),
 );
+
+router.get(
+  '/auth/verify-email',
+  asyncHandler(async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).send('Token fehlt');
+    }
+
+    const user = await model.verifyEmailByToken(token);
+
+    if (!user) {
+      return res
+        .status(400)
+        .send('Ungültiger oder abgelaufener Bestätigungslink');
+    }
+
+    // optional: direkt auf Frontend weiterleiten
+    return res.redirect('http://localhost:9000/?verified=1');
+  }),
+);
+
+
 
 export default router;

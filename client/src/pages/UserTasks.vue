@@ -295,9 +295,15 @@ const loadUser = async () => {
 
 const loadTasks = async () => {
   try {
-    const res = await axios.get("http://localhost:3000/user/aufgaben", {
+    const url =
+      user.value.klasse === 'Admin'
+        ? 'http://localhost:3000/aufgaben'
+        : 'http://localhost:3000/user/aufgaben';
+
+    const res = await axios.get(url, {
       withCredentials: true,
     });
+
     tasks.value = res.data;
 
     if (user.value.klasse === 'Lehrer') {
@@ -310,6 +316,7 @@ const loadTasks = async () => {
     tasks.value = [];
   }
 };
+
 
 const loadSchuelerForTask = async (aufgabeid) => {
   try {
