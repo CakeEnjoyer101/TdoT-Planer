@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="ToDot Favicon Minimal">
+  <g fill="none" stroke="#d32f2f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- T -->
+    <path d="M18 20 H46"></path>
+    <path d="M32 20 V46"></path>
+    <!-- Dot -->
+    <circle cx="48" cy="44" r="4" fill="#d32f2f" stroke="none"></circle>
+  </g>
+</svg>

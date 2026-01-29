@@ -1,280 +1,364 @@
 <template>
-  <div class="main-page">
-    <!-- Klasse Popup - wird angezeigt wenn keine Klasse gesetzt ist -->
-    <div v-if="showKlassePopup && currentUser" class="klasse-popup-overlay">
-      <div class="klasse-popup">
-        <div class="popup-header">
-          <q-icon name="school" size="lg" color="red-7" />
+  <div class="main-app">
+    <!-- Animated Background -->
+    <div class="bg-pattern">
+      <div class="bg-orb orb-1"></div>
+      <div class="bg-orb orb-2"></div>
+      <div class="bg-orb orb-3"></div>
+    </div>
+
+    <!-- Klasse Popup -->
+    <div v-if="showKlassePopup && currentUser" class="popup-overlay">
+      <div class="popup-modal">
+        <div class="popup-top">
+          <div class="popup-icon-circle">
+            <q-icon name="school" />
+          </div>
           <h3>Klasseninformation erforderlich</h3>
         </div>
 
-        <div class="popup-content">
-          <p>Bitte gib deine Klasse ein, um fortzufahren:</p>
-          <p class="popup-subtext">Beispiele: 2AHIT, 3BHITM, 4AFITN, 5AHITN</p>
+        <div class="popup-main">
+          <p class="popup-text">Bitte gib deine Klasse ein, um fortzufahren:</p>
+          <p class="popup-hint">Beispiele: 2AHIT, 3BHITM, 4AFITN, 5AHITN</p>
 
           <q-input
             v-model="klasseInput"
             label="Klasse"
-            color="red-7"
+            color="primary"
             outlined
-            class="klasse-input"
+            class="popup-input"
             :rules="[(val) => !!val || 'Klasse ist erforderlich']"
             @keyup.enter="saveKlasse"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="class" />
+            </template>
+          </q-input>
 
-          <div class="popup-buttons">
+          <div class="popup-actions">
             <q-btn
               label="Speichern"
               @click="saveKlasse"
-              color="red-7"
               :disabled="!klasseInput"
-              class="save-btn"
-            />
+              class="popup-save-btn"
+              unelevated
+              size="lg"
+            >
+              <template v-slot:default>
+                <q-icon name="check_circle" class="q-mr-sm" />
+                Speichern
+              </template>
+            </q-btn>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="!currentUser" class="loading-container">
-      <q-spinner size="50px" color="red-7" />
-      <p>Lade Benutzerdaten...</p>
+    <div v-if="!currentUser" class="loader-screen">
+      <div class="loader-content">
+        <q-spinner-gears size="100px" color="cyan" />
+        <p class="loader-text">Lade Benutzerdaten...</p>
+        <div class="loader-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
     </div>
 
-    <!-- Hauptinhalt -->
-    <div v-else>
-      <header class="header">
-        <div class="header-left">
-          <button class="logout-btn" @click="logout">
-            <q-icon name="logout" class="q-mr-xs" />
-            Abmelden
-          </button>
+    <!-- Main Content -->
+    <div v-else class="main-content">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="app-header-container">
+          <div class="header-actions-left">
+            <button class="header-btn logout" @click="logout">
+              <q-icon name="logout" />
+              <span>Abmelden</span>
+            </button>
 
-          <button
-            v-if="currentUser && currentUser.klasse === 'Admin'"
-            class="admin-btn"
-            @click="goToAdminDashboard"
-          >
-            <q-icon name="admin_panel_settings" class="q-mr-xs" />
-            Admin
-          </button>
-        </div>
+            <button
+              v-if="currentUser && currentUser.klasse === 'Admin'"
+              class="header-btn admin"
+              @click="goToAdminDashboard"
+            >
+              <q-icon name="admin_panel_settings" />
+              <span>Admin</span>
+            </button>
+          </div>
 
-        <h1>Tag der offenen Tür</h1>
+          <div class="header-branding">
+            <h1>Tag der offenen Tür</h1>
+            <p>HTL Villach</p>
+          </div>
 
-        <div class="header-right">
-          <div class="user-info" v-if="currentUser">
-            <div class="user-details">
-              <div
-                class="user-klasse"
-                v-if="
-                  currentUser.klasse && currentUser.klasse !== 'Keine Klasse'
-                "
-                :class="getBadgeClass()"
-              >
-                {{ getBadgeText() }}
-              </div>
-              <div class="user-name-section">
-                <q-icon :name="getUserIcon()" class="user-icon" />
-                <span class="user-name">{{ currentUser.name }}</span>
+          <div class="header-actions-right">
+            <div class="user-profile" v-if="currentUser">
+              <div class="profile-wrapper">
+                <div
+                  class="profile-badge"
+                  v-if="currentUser.klasse && currentUser.klasse !== 'Keine Klasse'"
+                  :class="getBadgeClass()"
+                >
+                  {{ getBadgeText() }}
+                </div>
+                <div class="profile-identity">
+                  <div class="profile-avatar">
+                    <q-icon :name="getUserIcon()" />
+                  </div>
+                  <span class="profile-name">{{ currentUser.name }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main class="content">
-        <!-- Erste Klassen: Freier Tag -->
-        <div v-if="isFirstClass" class="free-day-container">
-          <div class="free-day-content">
-            <q-icon name="celebration" size="120px" color="green-6" />
-            <h2 class="free-day-title">Freier Tag!</h2>
-            <p class="free-day-message">
-              Als Schüler/in der 1. Klasse hast du heute frei und kannst den Tag
-              der offenen Tür genießen.
-            </p>
-            <div class="free-day-actions">
-              <button class="tasks-btn" @click="goToUserTasks">
-                <q-icon name="list_alt" class="q-mr-xs" />
-                Zu deinen Aufgaben
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fünfte Klassen: Diplomarbeit Pflicht -->
-        <div v-else-if="isFifthClass" class="diplom-container">
-          <div class="diplom-content">
-            <q-icon name="school" size="120px" color="blue-6" />
-            <h2 class="diplom-title">Diplomarbeit Präsentation</h2>
-            <p class="diplom-message">
-              Als Schüler/in der 5. Klasse präsentierst du heute deine
-              Diplomarbeit. Diese Präsentation ist verpflichtend und findet den
-              ganzen Tag statt.
-            </p>
-            <div class="diplom-info">
-              <h3>Deine Aufgabe:</h3>
-              <div v-if="diplomTask" class="diplom-task-simple">
-                <div class="placeholder-icon">
-                  {{ diplomTask.icon || "🎓" }}
-                </div>
-                <div class="diplom-task-content">
-                  <h4>{{ diplomTask.titel }}</h4>
-                  <p>
-                    {{ diplomTask.beschreibung }}
-                  </p>
-                  <div class="diplom-task-meta">
-                    <span>
-                      <q-icon name="schedule" class="q-mr-xs" />
-                      {{ formatTime(diplomTask.uhrzeit) }} Uhr
-                    </span>
-                    <span>
-                      <q-icon name="location_on" class="q-mr-xs" />
-                      Zugeteilter Stand
-                    </span>
-                  </div>
-                </div>
+      <!-- Main Area -->
+      <main class="app-main">
+        <div class="main-container">
+          
+          <!-- First Class: Free Day -->
+          <div v-if="isFirstClass" class="special-view free-day">
+            <div class="special-content">
+              <div class="special-icon celebration">
+                <q-icon name="celebration" />
               </div>
-              <div v-else>
-                <p>Lade Diplomarbeit...</p>
-              </div>
-            </div>
-            <div class="diplom-note">
-              <q-icon name="info" color="#1976d2" />
-              <p>
-                Die Präsentation deiner Diplomarbeit ist verpflichtend. Bitte
-                halte dich an deinen zugewiesenen Stand.
+              <h2>Freier Tag!</h2>
+              <p class="special-message">
+                Als Schüler/in der 1. Klasse hast du heute frei und kannst den Tag
+                der offenen Tür genießen.
               </p>
+              <div class="benefits-grid">
+                <div class="benefit-item">
+                  <q-icon name="explore" />
+                  <span>Erkunde die Schule</span>
+                </div>
+                <div class="benefit-item">
+                  <q-icon name="groups" />
+                  <span>Triff neue Leute</span>
+                </div>
+                <div class="benefit-item">
+                  <q-icon name="restaurant" />
+                  <span>Genieße Snacks</span>
+                </div>
+              </div>
+              <div class="special-cta">
+                <button class="cta-primary" @click="goToUserTasks">
+                  <q-icon name="list_alt" />
+                  <span>Zu deinen Aufgaben</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Andere Klassen: Normale Ansicht -->
-        <template v-else>
-          <section class="top-tabs">
-            <ul class="tabs-list" ref="tabsList">
-              <li
-                v-for="(task, i) in visibleTasks"
-                :key="task.aufgabeid || 'placeholder-' + i"
-                :class="[
-                  'tab-item',
-                  { active: visibleStart + i === currentIndex },
-                ]"
-                @click="selectIndex(visibleStart + i)"
-              >
-                <span class="tab-title">{{ task?.titel || "Content" }}</span>
-                <span
-                  class="underline"
-                  v-if="visibleStart + i === currentIndex"
-                ></span>
-              </li>
-            </ul>
-          </section>
-
-          <section class="stage">
-            <button class="stage-arrow left" @click="prev">‹</button>
-
-            <div class="stage-inner">
-              <transition name="slide-fade" mode="out-in">
-                <div :key="currentIndex" class="image-placeholder">
-                  <div class="placeholder-content">
-                    <div class="placeholder-icon">
-                      {{ activeTask?.icon || "📷" }}
+          <!-- Fifth Class: Diploma -->
+          <div v-else-if="isFifthClass" class="special-view diploma">
+            <div class="special-content">
+              <div class="special-icon diploma-icon">
+                <q-icon name="school" />
+              </div>
+              <h2>Diplomarbeit Präsentation</h2>
+              <p class="special-message">
+                Als Schüler/in der 5. Klasse präsentierst du heute deine
+                Diplomarbeit. Diese Präsentation ist verpflichtend und findet den
+                ganzen Tag statt.
+              </p>
+              <div class="diploma-details">
+                <h3>
+                  <q-icon name="assignment" class="q-mr-sm" />
+                  Deine Aufgabe:
+                </h3>
+                <div v-if="diplomTask" class="diploma-card">
+                  <div class="diploma-emoji">
+                    {{ diplomTask.icon || "🎓" }}
+                  </div>
+                  <div class="diploma-info">
+                    <h4>{{ diplomTask.titel }}</h4>
+                    <p>{{ diplomTask.beschreibung }}</p>
+                    <div class="diploma-meta">
+                      <div class="meta-chip">
+                        <q-icon name="schedule" />
+                        <span>{{ formatTime(diplomTask.uhrzeit) }} Uhr</span>
+                      </div>
+                      <div class="meta-chip">
+                        <q-icon name="location_on" />
+                        <span>Zugeteilter Stand</span>
+                      </div>
                     </div>
-                    <p class="placeholder-text">
-                      {{ activeTask?.titel || "Bildvorschau" }}
-                    </p>
                   </div>
                 </div>
-              </transition>
-            </div>
-
-            <button class="stage-arrow right" @click="next">›</button>
-          </section>
-
-          <section class="info-bar">
-            <div class="info-text">
-              <h3>
-                {{
-                  activeTask?.titel ||
-                  "Infos zum/zur entsprechenden/r Raum/Aufgabe"
-                }}
-              </h3>
-              <p class="info-desc">
-                {{
-                  activeTask?.beschreibung ||
-                  "Weitere Informationen zur Aufgabe erscheinen hier."
-                }}
-              </p>
-              <div class="info-meta">
-                <span v-if="activeTask?.datum" class="meta-date">
-                  <span class="meta-icon">📅</span>
-                  {{ formatDate(activeTask.datum) }}
-                </span>
-                <span v-if="activeTask?.uhrzeit" class="meta-time">
-                  <span class="meta-icon">⏰</span>
-                  {{ formatTime(activeTask.uhrzeit) }} Uhr
-                </span>
-                <span v-if="activeTask?.lehrer_name" class="meta-lehrer">
-                  <span class="meta-icon">👨‍🏫</span>
-                  {{ activeTask.lehrer_name }}
-                </span>
+                <div v-else class="diploma-loading">
+                  <q-spinner size="md" color="cyan" />
+                  <p>Lade Diplomarbeit...</p>
+                </div>
+              </div>
+              <div class="diploma-notice">
+                <q-icon name="info" />
+                <p>
+                  Die Präsentation deiner Diplomarbeit ist verpflichtend. Bitte
+                  halte dich an deinen zugewiesenen Stand.
+                </p>
               </div>
             </div>
+          </div>
 
-            <div class="info-action">
-              <button
-                v-if="
-                  currentUser &&
-                  currentUser.klasse &&
-                  currentUser.klasse !== 'Admin' &&
-                  currentUser.klasse !== 'Lehrer' &&
-                  !currentUser.klasse.toLowerCase().includes('fitn')
-                "
-                class="anmelde-btn"
-                @click="schuelerAnmelden"
-                :disabled="!activeTask || isAlreadyRegisteredForTask"
-              >
-                <q-icon name="how_to_reg" class="q-mr-xs" />
-                {{
-                  isAlreadyRegisteredForTask ? "Bereits angemeldet" : "Anmelden"
-                }}
+          <!-- Normal View: Other Classes -->
+          <template v-else>
+            <!-- Tabs Navigation -->
+            <section class="nav-tabs">
+              <div class="tabs-wrapper">
+                <ul class="tabs-scroll" ref="tabsList">
+                  <li
+                    v-for="(task, i) in visibleTasks"
+                    :key="task.aufgabeid || 'placeholder-' + i"
+                    :class="['tab-card', { 'tab-active': visibleStart + i === currentIndex }]"
+                    @click="selectIndex(visibleStart + i)"
+                  >
+                    <div class="tab-inner">
+                      <span class="tab-emoji">{{ task?.icon || "📋" }}</span>
+                      <span class="tab-label">{{ task?.titel || "Content" }}</span>
+                    </div>
+                    <span
+                      class="tab-highlight"
+                      v-if="visibleStart + i === currentIndex"
+                    ></span>
+                  </li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- Image Stage -->
+            <section class="display-stage">
+              <button class="nav-arrow prev" @click="prev">
+                <q-icon name="chevron_left" size="lg" />
               </button>
 
-              <button
-                v-if="currentUser && currentUser.klasse === 'Lehrer'"
-                class="lehrer-anmelde-btn"
-                @click="lehrerAnmelden"
-                :disabled="!activeTask || activeTask.lehrerid"
-              >
-                <q-icon name="assignment_ind" class="q-mr-xs" />
-                {{
-                  activeTask?.lehrerid
-                    ? "Aufgabe vergeben"
-                    : "Als Lehrkraft anmelden"
-                }}
-              </button>
+              <div class="stage-container">
+                <transition name="fade-slide" mode="out-in">
+                  <div :key="currentIndex" class="stage-visual">
+                    <div class="visual-wrapper">
+                      <div class="visual-icon-group">
+                        <div class="visual-icon">
+                          {{ activeTask?.icon || "📷" }}
+                        </div>
+                        <div class="visual-glow"></div>
+                      </div>
+                      <p class="visual-label">
+                        {{ activeTask?.titel || "Bildvorschau" }}
+                      </p>
+                      <div class="visual-decor">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  </div>
+                </transition>
+              </div>
 
-              <button class="tasks-btn" @click="goToUserTasks">
-                <q-icon name="list_alt" class="q-mr-xs" />
-                Zu den Aufgaben
+              <button class="nav-arrow next" @click="next">
+                <q-icon name="chevron_right" size="lg" />
               </button>
-            </div>
-          </section>
+            </section>
 
-          <section class="bottom-nav">
-            <ul class="dots">
-              <li
-                v-for="(t, idx) in filteredTasks"
-                :key="idx"
-                class="dot"
-                :class="{ active: idx === currentIndex }"
-                @click="selectIndex(idx)"
-                :aria-label="'Slide ' + (idx + 1)"
-              ></li>
-            </ul>
-          </section>
-        </template>
+            <!-- Info Panel -->
+            <section class="details-panel">
+              <div class="panel-info">
+                <div class="info-heading">
+                  <q-icon name="info" class="heading-icon" />
+                  <h3>
+                    {{
+                      activeTask?.titel ||
+                      "Infos zum/zur entsprechenden/r Raum/Aufgabe"
+                    }}
+                  </h3>
+                </div>
+                <p class="info-description">
+                  {{
+                    activeTask?.beschreibung ||
+                    "Weitere Informationen zur Aufgabe erscheinen hier."
+                  }}
+                </p>
+                <div class="info-metadata">
+                  <div v-if="activeTask?.datum" class="meta-chip">
+                    <q-icon name="event" />
+                    <span>{{ formatDate(activeTask.datum) }}</span>
+                  </div>
+                  <div v-if="activeTask?.uhrzeit" class="meta-chip">
+                    <q-icon name="access_time" />
+                    <span>{{ formatTime(activeTask.uhrzeit) }} Uhr</span>
+                  </div>
+                  <div v-if="activeTask?.lehrer_name" class="meta-chip">
+                    <q-icon name="person" />
+                    <span>{{ activeTask.lehrer_name }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel-actions">
+                <button
+                  v-if="
+                    currentUser &&
+                    currentUser.klasse &&
+                    currentUser.klasse !== 'Admin' &&
+                    currentUser.klasse !== 'Lehrer' &&
+                    !currentUser.klasse.toLowerCase().includes('fitn')
+                  "
+                  class="panel-btn register"
+                  @click="schuelerAnmelden"
+                  :disabled="!activeTask || isAlreadyRegisteredForTask"
+                >
+                  <q-icon :name="isAlreadyRegisteredForTask ? 'check_circle' : 'how_to_reg'" />
+                  <span>
+                    {{
+                      isAlreadyRegisteredForTask ? "Bereits angemeldet" : "Anmelden"
+                    }}
+                  </span>
+                </button>
+
+                <button
+                  v-if="currentUser && currentUser.klasse === 'Lehrer'"
+                  class="panel-btn teacher"
+                  @click="lehrerAnmelden"
+                  :disabled="!activeTask || activeTask.lehrerid"
+                >
+                  <q-icon name="assignment_ind" />
+                  <span>
+                    {{
+                      activeTask?.lehrerid
+                        ? "Aufgabe vergeben"
+                        : "Als Lehrkraft anmelden"
+                    }}
+                  </span>
+                </button>
+
+                <button class="panel-btn outline" @click="goToUserTasks">
+                  <q-icon name="list_alt" />
+                  <span>Zu den Aufgaben</span>
+                </button>
+              </div>
+            </section>
+
+            <!-- Pagination Dots -->
+            <section class="pagination">
+              <ul class="dot-nav">
+                <li
+                  v-for="(t, idx) in filteredTasks"
+                  :key="idx"
+                  class="nav-dot"
+                  :class="{ 'dot-active': idx === currentIndex }"
+                  @click="selectIndex(idx)"
+                  :aria-label="'Slide ' + (idx + 1)"
+                >
+                  <span class="dot-core"></span>
+                </li>
+              </ul>
+            </section>
+          </template>
+
+        </div>
       </main>
     </div>
   </div>
@@ -337,13 +421,9 @@ export default {
       );
     },
 
-    /* =====================================================
-       ✅ ZENTRALE FILTER-LOGIK (ADMIN + LEHRER = ALLE TASKS)
-       ===================================================== */
     filteredTasks() {
       if (!this.currentUser?.klasse) return [];
 
-      // 👑 ADMIN & 👨‍🏫 LEHRER → sehen ALLE Aufgaben
       if (
         this.currentUser.klasse === "Admin" ||
         this.currentUser.klasse === "Lehrer"
@@ -351,7 +431,6 @@ export default {
         return this.tasks;
       }
 
-      // ❌ Sonderfälle Schüler
       if (
         this.currentUser.klasse === "Keine Klasse" ||
         this.isFirstClass ||
@@ -362,7 +441,6 @@ export default {
 
       const userKlasse = this.currentUser.klasse.toLowerCase();
 
-      // 🎓 Schüler sehen nur passende Aufgaben
       return this.tasks.filter((task) => {
         if (!task.ziel_klassen) return false;
 
@@ -406,7 +484,6 @@ export default {
   },
 
   methods: {
-    /* ================= USER ================= */
     async loadUserProfile() {
       try {
         const res = await axios.get("http://localhost:3000/auth/profile", {
@@ -430,27 +507,24 @@ export default {
     },
 
     async saveKlasse() {
-  if (!this.klasseInput) return;
+      if (!this.klasseInput) return;
 
-  try {
-    await axios.post(
-      "http://localhost:3000/auth/update-klasse",
-      { klasse: this.klasseInput },
-      { withCredentials: true }
-    );
+      try {
+        await axios.post(
+          "http://localhost:3000/auth/update-klasse",
+          { klasse: this.klasseInput },
+          { withCredentials: true }
+        );
 
-    // lokal updaten
-    this.currentUser.klasse = this.klasseInput;
-    this.showKlassePopup = false;
-    this.klasseInput = "";
+        this.currentUser.klasse = this.klasseInput;
+        this.showKlassePopup = false;
+        this.klasseInput = "";
 
-    // optional: Tasks neu laden
-    await this.loadTasks();
-  } catch (err) {
-    console.error("Fehler beim Speichern der Klasse", err);
-  }
-},
-
+        await this.loadTasks();
+      } catch (err) {
+        console.error("Fehler beim Speichern der Klasse", err);
+      }
+    },
 
     isAdminAccount() {
       return this.currentUser?.klasse === "Admin";
@@ -460,16 +534,15 @@ export default {
       return this.currentUser?.klasse === "Lehrer";
     },
 
-    /* ================= BADGES ================= */
     getBadgeClass() {
-      if (this.isAdminAccount()) return "admin-badge";
-      if (this.isLehrerAccount()) return "lehrer-badge";
-      return "";
+      if (this.isAdminAccount()) return "badge-admin";
+      if (this.isLehrerAccount()) return "badge-teacher";
+      return "badge-student";
     },
 
     getBadgeText() {
-      if (this.isAdminAccount()) return "Admin Account";
-      if (this.isLehrerAccount()) return "Lehrer Account";
+      if (this.isAdminAccount()) return "Admin";
+      if (this.isLehrerAccount()) return "Lehrer";
       return this.currentUser?.klasse || "";
     },
 
@@ -479,7 +552,6 @@ export default {
       return "person";
     },
 
-    /* ================= TASKS ================= */
     async loadTasks() {
       try {
         const res = await axios.get("http://localhost:3000/aufgaben", {
@@ -527,7 +599,6 @@ export default {
         };
     },
 
-    /* ================= ACTIONS ================= */
     async schuelerAnmelden() {
       if (!this.activeTask) return;
 
@@ -552,7 +623,6 @@ export default {
       await this.loadTasks();
     },
 
-    /* ================= NAVIGATION ================= */
     goToAdminDashboard() {
       window.location.href = "http://localhost:9000/admin";
     },
@@ -570,7 +640,6 @@ export default {
       window.location.href = "http://localhost:9000/";
     },
 
-    /* ================= SLIDER ================= */
     selectIndex(idx) {
       if (!this.filteredTasks.length) return;
       this.currentIndex = Math.max(
@@ -621,894 +690,1278 @@ export default {
 };
 </script>
 
-
 <style scoped>
-.main-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 8px 20px 60px;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: #333;
-  min-height: 100vh;
-  box-sizing: border-box;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 10px;
-  border-bottom: 3px solid #d32f2f;
-  margin-bottom: 18px;
-  background: white;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
-}
-
-.header h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 48px;
+/* ============================================
+   GLOBAL RESET
+   ============================================ */
+* {
   margin: 0;
-  font-weight: 600;
-  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.header-left,
-.header-right {
-  width: 200px;
-  display: flex;
-  align-items: center;
+.main-app {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow-x: hidden;
 }
 
-.logout-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-}
-
-.logout-btn:hover {
-  background: #d32f2f;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
-}
-
-.admin-btn {
-  background: #7b1fa2;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
-}
-
-.admin-btn:hover {
-  background: #6a1b9a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(123, 31, 162, 0.3);
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.user-klasse {
-  background: #d32f2f;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.admin-badge {
-  background: #7b1fa2 !important;
-  font-weight: 700;
-}
-
-.lehrer-badge {
-  background: #388e3c !important;
-  font-weight: 700;
-}
-
-.user-name-section {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 2px solid #e0e0e0;
-}
-
-.user-icon {
-  color: #d32f2f;
-  margin-right: 8px;
-  font-size: 18px;
-}
-
-.user-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-}
-
-.klasse-popup-overlay {
+/* ============================================
+   ANIMATED BACKGROUND
+   ============================================ */
+.bg-pattern {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: orb-float 20s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  top: -200px;
+  left: -200px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  bottom: -150px;
+  right: -150px;
+  animation-delay: -7s;
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  top: 40%;
+  right: 10%;
+  animation-delay: -14s;
+}
+
+@keyframes orb-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
+}
+
+/* ============================================
+   POPUP MODAL
+   ============================================ */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
+  animation: overlay-fade 0.3s ease;
 }
 
-.klasse-popup {
-  background: white;
-  border-radius: 16px;
-  padding: 0;
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.popup-modal {
+  background: linear-gradient(135deg, #1a1f3a, #0a0e27);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
   width: 90%;
-  max-width: 450px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border: 3px solid #d32f2f;
+  max-width: 500px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  animation: popup-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.popup-header {
-  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
-  color: white;
-  padding: 24px;
+@keyframes popup-slide {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popup-top {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  padding: 40px 32px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.popup-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.popup-content {
-  padding: 32px 24px;
-  text-align: center;
-}
-
-.popup-content p {
-  margin: 0 0 24px 0;
-  color: #666;
-  font-size: 1.1rem;
-  line-height: 1.5;
-}
-
-.klasse-input {
-  margin-bottom: 24px;
-}
-
-.popup-buttons {
-  display: flex;
-  justify-content: center;
-}
-
-.save-btn {
-  min-width: 120px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.content {
-  padding: 30px 10px 0;
-  background: white;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.free-day-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 400px;
-  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-  border-radius: 12px;
-  margin: 20px 0;
-  border: 2px dashed #4caf50;
-}
-
-.free-day-content {
-  text-align: center;
-  padding: 40px;
-}
-
-.free-day-title {
-  font-size: 2.5rem;
-  color: #2e7d32;
-  margin: 20px 0 10px;
-  font-weight: 700;
-}
-
-.free-day-message {
-  font-size: 1.2rem;
-  color: #388e3c;
-  margin-bottom: 30px;
-  line-height: 1.6;
-  max-width: 500px;
-}
-
-.free-day-actions {
-  margin-top: 20px;
-}
-
-.diplom-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 500px;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-radius: 12px;
-  margin: 20px 0;
-  border: 2px solid #1976d2;
-  padding: 20px;
-}
-
-.diplom-content {
-  text-align: center;
-  padding: 40px;
-  max-width: 800px;
-  width: 100%;
-}
-
-.diplom-title {
-  font-size: 2.5rem;
-  color: #1565c0;
-  margin: 20px 0 10px;
-  font-weight: 700;
-}
-
-.diplom-message {
-  font-size: 1.2rem;
-  color: #1976d2;
-  margin-bottom: 30px;
-  line-height: 1.6;
-}
-
-.diplom-info {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  margin: 30px 0;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.diplom-info h3 {
-  color: #1565c0;
-  margin-bottom: 24px;
-}
-
-.diplom-task-simple {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 20px;
-}
-
-.diplom-task-content {
-  text-align: left;
-}
-
-.diplom-task-content h4 {
-  color: #333;
-  margin: 0 0 8px 0;
-  font-size: 1.3rem;
-}
-
-.diplom-task-content p {
-  color: #666;
-  margin: 0 0 16px 0;
-  line-height: 1.4;
-}
-
-.diplom-task-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 0.9rem;
-  color: #757575;
-}
-
-.diplom-task-meta span {
-  display: flex;
-  align-items: center;
-}
-
-.diplom-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 20px;
-}
-
-.diplom-note p {
-  margin: 0;
-  color: #1976d2;
-  font-size: 0.9rem;
-}
-
-.top-tabs {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 30px;
-  position: relative;
-}
-
-.tabs-list {
-  display: flex;
-  gap: 40px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  align-items: center;
-  overflow: hidden;
-  min-width: 520px;
-  justify-content: center;
-}
-
-.tab-item {
-  position: relative;
-  cursor: pointer;
-  padding: 12px 8px;
-  text-align: center;
-  min-width: 80px;
-  transition: all 0.3s ease;
-  border-radius: 8px 8px 0 0;
-}
-
-.tab-item:hover {
-  background: #ffebee;
-}
-
-.tab-item.active {
-  background: #ffebee;
-}
-
-.tab-title {
-  display: block;
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.tab-item.active .tab-title {
-  color: #d32f2f;
-  font-weight: 700;
-}
-
-.underline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #d32f2f 0%, #f44336 100%);
-  bottom: -1px;
-  margin: 0 auto;
-  width: 60%;
-  border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
-}
-
-.stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 10px 0 0;
-  position: relative;
-  height: 420px;
-}
-
-.stage-inner {
-  width: 75%;
-  max-width: 1000px;
-  min-width: 280px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: visible;
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  border: 2px dashed #d32f2f;
-  box-sizing: border-box;
-  background: linear-gradient(135deg, #ffffff 0%, #ffebee 50%, #ffffff 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(211, 47, 47, 0.1);
-}
-
-.placeholder-content {
-  text-align: center;
-  color: #d32f2f;
-}
-
-.placeholder-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.placeholder-text {
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0;
-  opacity: 0.8;
-}
-
-.stage-arrow {
-  position: absolute;
-  background: #d32f2f;
-  border: none;
-  font-size: 36px;
-  line-height: 1;
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 4;
+.popup-icon-circle {
+  width: 90px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
-}
-
-.stage-arrow:hover {
-  background: #b71c1c;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.stage-arrow.left {
-  left: 40px;
-}
-
-.stage-arrow.right {
-  right: 40px;
-}
-
-.info-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
-  color: #fff;
-  margin: 0 auto;
-  width: 75%;
-  max-width: 1000px;
-  padding: 24px 28px;
-  box-sizing: border-box;
-  margin-top: 8px;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 4px 20px rgba(211, 47, 47, 0.2);
-}
-
-.info-text {
-  max-width: 70%;
-}
-
-.info-text h3 {
-  margin: 0 0 8px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.info-text .info-desc {
-  margin: 0 0 8px;
-  color: #ffebee;
-  line-height: 1.5;
-}
-
-.info-meta {
-  color: #ffcdd2;
-  font-size: 14px;
-  margin-top: 12px;
-  display: flex;
-  gap: 20px;
-}
-
-.meta-icon {
-  margin-right: 6px;
-  opacity: 0.9;
-}
-
-.meta-lehrer {
-  color: #ffcdd2;
-  font-size: 14px;
-}
-
-.info-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.tasks-btn {
-  background: white;
-  color: #d32f2f;
-  border: 2px solid white;
-  padding: 12px 26px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.tasks-btn:hover {
-  background: transparent;
-  color: white;
-  transform: translateY(-2px);
-}
-
-.anmelde-btn {
-  background: #4caf50;
-  color: white;
-  border: 2px solid white;
-  padding: 12px 26px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.anmelde-btn:hover:not(:disabled) {
-  background: #388e3c;
-  transform: translateY(-2px);
-}
-
-.anmelde-btn:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
-
-.lehrer-anmelde-btn {
-  background: #ff9800;
-  color: white;
-  border: 2px solid white;
-  padding: 12px 26px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.lehrer-anmelde-btn:hover:not(:disabled) {
-  background: #f57c00;
-  transform: translateY(-2px);
-}
-
-.lehrer-anmelde-btn:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
-
-.bottom-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  margin-top: 28px;
-  padding-bottom: 20px;
+  backdrop-filter: blur(10px);
+  font-size: 44px;
+  color: #ffffff;
 }
 
-.dots {
+.popup-top h3 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.popup-main {
+  padding: 44px 36px;
+  text-align: center;
+}
+
+.popup-text {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.popup-hint {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 14px !important;
+  margin-bottom: 36px !important;
+  font-weight: 400 !important;
+}
+
+.popup-input {
+  margin-bottom: 36px;
+}
+
+.popup-save-btn {
+  min-width: 200px;
+  height: 52px;
+  font-size: 17px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #ffffff;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.popup-save-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
+}
+
+/* ============================================
+   LOADING SCREEN
+   ============================================ */
+.loader-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
-  gap: 12px;
-  padding: 0;
-  list-style: none;
-  margin: 0 8px;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
 }
 
-.dot {
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  animation: loader-pulse 2s ease-in-out infinite;
+}
+
+@keyframes loader-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.85; }
+}
+
+.loader-text {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin: 0;
+}
+
+.loader-dots {
+  display: flex;
+  gap: 10px;
+}
+
+.loader-dots span {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #ffcdd2;
+  background: #00d4ff;
+  animation: loader-bounce 1.4s ease-in-out infinite;
+}
+
+.loader-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loader-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loader-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-14px); }
+}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+.main-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 14, 39, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-header-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+}
+
+.header-actions-left,
+.header-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-actions-right {
+  justify-content: flex-end;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.dot.active {
-  background: #d32f2f;
-  transform: scale(1.4);
-  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.4);
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
 }
 
-.dot:hover {
-  background: #f44336;
-  transform: scale(1.2);
+.header-btn.logout {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+  border: none;
 }
 
-.slide-fade-enter-active {
-  transition:
-    opacity 360ms ease,
-    transform 360ms cubic-bezier(0.2, 0.9, 0.2, 1);
+.header-btn.logout:hover {
+  box-shadow: 0 8px 24px rgba(255, 71, 87, 0.4);
 }
 
-.slide-fade-leave-active {
-  transition:
-    opacity 240ms ease,
-    transform 240ms cubic-bezier(0.2, 0.9, 0.2, 1);
+.header-btn.admin {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  border: none;
 }
 
-.slide-fade-enter-from {
-  opacity: 0;
-  transform: translateX(24px) scale(0.995);
+.header-btn.admin:hover {
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
 }
 
-.slide-fade-enter-to {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-}
-
-.slide-fade-leave-from {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-}
-
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-18px) scale(0.995);
-}
-
-@media (max-width: 900px) {
-  .header h1 {
-    font-size: 36px;
-  }
-
-  .header-left,
-  .header-right {
-    width: 150px;
-  }
-
-  .logout-btn,
-  .admin-btn {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .user-details {
-    align-items: center;
-  }
-
-  .user-klasse {
-    font-size: 0.7rem;
-    padding: 3px 10px;
-  }
-
-  .user-name-section {
-    padding: 6px 12px;
-  }
-
-  .stage {
-    height: 340px;
-  }
-
-  .top-tabs {
-    gap: 6px;
-  }
-
-  .tabs-list {
-    min-width: 360px;
-    gap: 18px;
-  }
-
-  .info-bar {
-    width: 90%;
-    padding: 20px;
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .info-text {
-    max-width: 100%;
-  }
-
-  .info-action {
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .diplom-container {
-    margin: 10px 0;
-    padding: 10px;
-  }
-
-  .diplom-content {
-    padding: 20px;
-  }
-
-  .diplom-title {
-    font-size: 2rem;
-  }
-
-  .diplom-message {
-    font-size: 1rem;
-  }
-
-  .diplom-task-simple {
-    flex-direction: column;
-    text-align: center;
-    gap: 16px;
-  }
-
-  .diplom-task-content {
-    text-align: center;
-  }
-
-  .diplom-task-meta {
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-  }
-}
-
-@media (max-width: 520px) {
-  .header {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
-
-  .header h1 {
-    font-size: 26px;
-  }
-
-  .header-left,
-  .header-right {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .klasse-popup {
-    width: 95%;
-    margin: 20px;
-  }
-
-  .popup-header {
-    padding: 20px;
-  }
-
-  .popup-content {
-    padding: 24px 20px;
-  }
-
-  .stage {
-    height: 260px;
-  }
-
-  .tabs-list {
-    min-width: 240px;
-    gap: 12px;
-  }
-
-  .stage-arrow {
-    width: 48px;
-    height: 48px;
-    font-size: 28px;
-  }
-
-  .stage-arrow.left {
-    left: 8px;
-  }
-
-  .stage-arrow.right {
-    right: 8px;
-  }
-
-  .info-bar {
-    padding: 16px;
-  }
-
-  .info-meta {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .free-day-container {
-    height: 300px;
-    margin: 10px 0;
-  }
-
-  .free-day-content {
-    padding: 20px;
-  }
-
-  .free-day-title {
-    font-size: 2rem;
-  }
-
-  .free-day-message {
-    font-size: 1rem;
-  }
-}
-
-.anmelde-btn:disabled {
-  background: #388e3c !important;
-  cursor: default !important;
-}
-
-.lehrer-anmelde-btn:disabled {
-  background: #f57c00 !important;
-  cursor: default !important;
-}
-
-.diplom-task-simple .placeholder-icon {
-  font-size: 60px;
-  margin-right: 20px;
-}
-
-.diplom-task-simple {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
+.header-branding {
   text-align: center;
 }
 
-.loading-container p {
-  margin-top: 20px;
-  font-size: 1.2rem;
-  color: #666;
+.header-branding h1 {
+  font-size: 34px;
+  margin: 0;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00d4ff 0%, #00f5a0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.header-branding p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.user-profile {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.profile-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-admin {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.badge-teacher {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.3);
+}
+
+.badge-student {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 16px 8px 8px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.profile-identity:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.profile-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+/* ============================================
+   MAIN AREA
+   ============================================ */
+.app-main {
+  padding: 48px 40px;
+}
+
+.main-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   SPECIAL VIEWS (FREE DAY & DIPLOMA)
+   ============================================ */
+.special-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 600px;
+  border-radius: 24px;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid;
+}
+
+.special-view::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+}
+
+.special-view.free-day {
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.1), rgba(0, 212, 170, 0.05));
+  border-color: rgba(0, 245, 160, 0.3);
+}
+
+.special-view.free-day::before {
+  background: radial-gradient(circle, rgba(0, 245, 160, 0.15) 0%, transparent 70%);
+}
+
+.special-view.diploma {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 153, 255, 0.05));
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.special-view.diploma::before {
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+}
+
+.special-content {
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.special-icon {
+  font-size: 120px;
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.special-icon.celebration {
+  /* No animation */
+}
+
+.special-icon.diploma-icon {
+  /* No animation */
+}
+
+.special-content h2 {
+  font-size: 48px;
+  font-weight: 800;
+  margin: 0 0 20px;
+}
+
+.special-view.free-day h2 {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.special-view.diploma h2 {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.special-message {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 40px;
+  line-height: 1.8;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto 40px;
+}
+
+.benefit-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 245, 160, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.15);
+}
+
+.benefit-item .q-icon {
+  font-size: 32px;
+  color: #00f5a0;
+}
+
+.benefit-item span {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.special-cta {
+  margin-top: 40px;
+}
+
+.cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+  border: none;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.3);
+}
+
+.cta-primary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 245, 160, 0.5);
+}
+
+/* Diploma Specific */
+.diploma-details {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 36px;
+  margin: 40px 0;
+  text-align: left;
+}
+
+.diploma-details h3 {
+  color: #00d4ff;
+  margin-bottom: 28px;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.diploma-card {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 28px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+}
+
+.diploma-emoji {
+  font-size: 72px;
+  min-width: 72px;
+}
+
+.diploma-info h4 {
+  color: #ffffff;
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.diploma-info p {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 20px;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.diploma-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.meta-chip .q-icon {
+  color: #00d4ff;
+}
+
+.diploma-loading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  padding: 40px;
+}
+
+.diploma-loading p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+}
+
+.diploma-notice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-top: 32px;
+}
+
+.diploma-notice .q-icon {
+  color: #00d4ff;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.diploma-notice p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   TABS NAVIGATION
+   ============================================ */
+.nav-tabs {
+  margin-bottom: 40px;
+}
+
+.tabs-wrapper {
+  overflow: hidden;
+}
+
+.tabs-scroll {
+  display: flex;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tab-card {
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.tab-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+}
+
+.tab-card.tab-active {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.25);
+}
+
+.tab-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 28px;
+}
+
+.tab-emoji {
+  font-size: 32px;
+  transition: all 0.3s ease;
+}
+
+.tab-card.tab-active .tab-emoji {
+  /* No scale animation */
+}
+
+.tab-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.tab-card.tab-active .tab-label {
+  color: #00d4ff;
+  font-weight: 700;
+}
+
+.tab-highlight {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #00d4ff 0%, #00f5a0 100%);
+  border-radius: 3px 3px 0 0;
+  animation: highlight-slide 0.3s ease;
+}
+
+@keyframes highlight-slide {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   DISPLAY STAGE
+   ============================================ */
+.display-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin: 0 0 32px;
+  position: relative;
+  height: 500px;
+}
+
+.stage-container {
+  flex: 1;
+  max-width: 1000px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.stage-visual {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 212, 255, 0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.visual-wrapper {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.visual-icon-group {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 28px;
+}
+
+.visual-icon {
+  font-size: 108px;
+  position: relative;
+  z-index: 2;
+}
+
+.visual-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: visual-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes visual-glow-pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+.visual-label {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: #00d4ff;
+}
+
+.visual-decor {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.visual-decor span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00d4ff;
+  animation: decor-bounce 1.4s ease-in-out infinite;
+}
+
+.visual-decor span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.visual-decor span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes decor-bounce {
+  0%, 80%, 100% { transform: scale(1); opacity: 0.5; }
+  40% { transform: scale(1.4); opacity: 1; }
+}
+
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.nav-arrow:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5);
+}
+
+.nav-arrow:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   DETAILS PANEL
+   ============================================ */
+.details-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 36px;
+  align-items: center;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #ffffff;
+  padding: 36px 44px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  margin-top: 32px;
+}
+
+.info-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.heading-icon {
+  font-size: 32px;
+}
+
+.panel-info h3 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.info-description {
+  margin: 0 0 24px;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.info-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.panel-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 32px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid transparent;
+  white-space: nowrap;
+  min-width: 220px;
+  justify-content: center;
+}
+
+.panel-btn.register {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+}
+
+.panel-btn.register:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 245, 160, 0.5);
+}
+
+.panel-btn.register:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.panel-btn.teacher {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  color: #ffffff;
+}
+
+.panel-btn.teacher:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.5);
+}
+
+.panel-btn.teacher:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.panel-btn.outline {
+  background: transparent;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.panel-btn.outline:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+  padding-bottom: 24px;
+}
+
+.dot-nav {
+  display: flex;
+  gap: 14px;
+  padding: 18px 28px;
+  margin: 0;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+}
+
+.nav-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-dot:hover {
+  background: rgba(0, 212, 255, 0.6);
+  transform: scale(1.25);
+}
+
+.nav-dot.dot-active {
+  background: #00d4ff;
+  transform: scale(1.4);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.5);
+}
+
+.dot-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.nav-dot.dot-active .dot-core {
+  opacity: 1;
+}
+
+/* ============================================
+   TRANSITIONS
+   ============================================ */
+.fade-slide-enter-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateX(40px) scale(0.96);
+}
+
+.fade-slide-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-40px) scale(0.96);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1200px) {
+  .app-header-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .header-actions-left,
+  .header-actions-right {
+    justify-content: center;
+  }
+
+  .profile-wrapper {
+    align-items: center;
+  }
+
+  .details-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-actions {
+    align-items: stretch;
+  }
+
+  .panel-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 32px 20px;
+  }
+
+  .app-header-container {
+    padding: 16px 20px;
+  }
+
+  .header-branding h1 {
+    font-size: 28px;
+  }
+
+  .display-stage {
+    height: 360px;
+    gap: 12px;
+  }
+
+  .nav-arrow {
+    width: 52px;
+    height: 52px;
+  }
+
+  .tabs-scroll {
+    gap: 10px;
+  }
+
+  .tab-inner {
+    padding: 14px 20px;
+  }
+
+  .tab-emoji {
+    font-size: 28px;
+  }
+
+  .tab-label {
+    font-size: 13px;
+  }
+
+  .details-panel {
+    padding: 28px 24px;
+  }
+
+  .panel-info h3 {
+    font-size: 22px;
+  }
+
+  .special-content h2 {
+    font-size: 36px;
+  }
+
+  .diploma-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .diploma-meta {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-branding h1 {
+    font-size: 22px;
+  }
+
+  .header-btn span {
+    display: none;
+  }
+
+  .header-btn {
+    padding: 12px;
+  }
+
+  .display-stage {
+    height: 280px;
+  }
+
+  .visual-icon {
+    font-size: 72px;
+  }
+
+  .visual-label {
+    font-size: 18px;
+  }
+
+  .dot-nav {
+    padding: 14px 20px;
+    gap: 10px;
+  }
+
+  .nav-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .special-view {
+    padding: 40px 24px;
+  }
+
+  .special-content h2 {
+    font-size: 28px;
+  }
 }
 </style>

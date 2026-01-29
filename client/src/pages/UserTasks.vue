@@ -1,172 +1,227 @@
 <template>
-  <div class="user-tasks-page">
-    <header class="header">
-      <div class="header-left">
-        <button class="back-btn" @click="goBack">
-          <q-icon name="arrow_back" class="q-mr-xs" />
-          Zurück
-        </button>
+  <div class="tasks-page">
+    <!-- Animated Background -->
+    <div class="bg-pattern">
+      <div class="bg-orb orb-1"></div>
+      <div class="bg-orb orb-2"></div>
+      <div class="bg-orb orb-3"></div>
+    </div>
 
-        <button class="logout-btn" @click="logout">
-          <q-icon name="logout" class="q-mr-xs" />
-          Abmelden
-        </button>
-      </div>
+    <!-- Header Navigation -->
+    <header class="page-header">
+      <div class="header-container">
+        <div class="header-actions">
+          <button class="nav-btn" @click="goBack">
+            <q-icon name="arrow_back" />
+            <span>Zurück</span>
+          </button>
+          <button class="nav-btn logout" @click="logout">
+            <q-icon name="logout" />
+            <span>Abmelden</span>
+          </button>
+        </div>
 
-      <h1>Meine Aufgaben</h1>
+        <div class="header-title">
+          <h1>Meine Aufgaben</h1>
+          <p>Übersicht deiner angemeldeten Aufgaben</p>
+        </div>
 
-      <div class="header-right" v-if="user">
-        <div class="user-info">
-          <div class="user-details">
-            <div class="user-klasse" :class="getBadgeClass()">
-              {{ getBadgeText() }}
+        <div class="header-user" v-if="user">
+          <div class="user-info">
+            <div class="user-icon">
+              <q-icon :name="getUserIcon()" />
             </div>
-            <div class="user-name-section">
-              <q-icon :name="getUserIcon()" class="user-icon" />
+            <div class="user-text">
               <span class="user-name">{{ user.name }}</span>
+              <span class="user-role" :class="getBadgeClass()">
+                {{ getBadgeText() }}
+              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="header-right" v-else>
-        <q-spinner size="20px" />
+        <div class="header-user" v-else>
+          <q-spinner size="28px" color="white" />
+        </div>
       </div>
     </header>
 
-    <main class="content">
-      <div v-if="user && user.klasse && user.klasse !== 'Admin' && user.klasse !== 'Lehrer'">
-        <h2 class="section-title">Meine angemeldeten Aufgaben</h2>
-        <div v-if="tasks.length === 0" class="no-tasks">
-          Du bist für derzeit keine Aufgaben angemeldet.
-        </div>
+    <!-- Main Content Area -->
+    <main class="page-main">
+      <div class="content-wrapper">
+        
+        <!-- Student View -->
+        <section v-if="user && user.klasse && user.klasse !== 'Admin' && user.klasse !== 'Lehrer'">
+          <div class="section-title">
+            <div class="title-icon">
+              <q-icon name="assignment" />
+            </div>
+            <h2>Angemeldete Aufgaben</h2>
+          </div>
 
-        <div v-else class="tasks-list">
-          <q-card v-for="task in tasks" :key="task.anmeldung_id" class="task-card">
-            <div class="task-header">
-              <div class="task-title">{{ task.titel }}</div>
-              <div class="task-status" :class="getStatusClass(task.status)">
-                {{ getStatusText(task.status) }}
+          <!-- Empty State -->
+          <div v-if="tasks.length === 0" class="empty-container">
+            <div class="empty-content">
+              <div class="empty-illustration">
+                <q-icon name="inbox" />
+              </div>
+              <h3>Keine Aufgaben vorhanden</h3>
+              <p>Du bist derzeit für keine Aufgaben angemeldet.</p>
+              <button class="cta-button" @click="goBack">
+                <q-icon name="add" />
+                Aufgaben entdecken
+              </button>
+            </div>
+          </div>
+
+          <!-- Tasks List -->
+          <div v-else class="tasks-container">
+            <div v-for="task in tasks" :key="task.anmeldung_id" class="task-item">
+              <div class="task-header">
+                <h3>{{ task.titel }}</h3>
+                <span class="badge" :class="getStatusClass(task.status)">
+                  {{ getStatusText(task.status) }}
+                </span>
+              </div>
+              
+              <p class="task-desc">{{ task.beschreibung }}</p>
+              
+              <div class="task-info">
+                <div class="info-chip" v-if="task.datum">
+                  <q-icon name="event" />
+                  <span>{{ formatDate(task.datum) }}</span>
+                </div>
+                <div class="info-chip" v-if="task.uhrzeit">
+                  <q-icon name="schedule" />
+                  <span>{{ formatTime(task.uhrzeit) }} Uhr</span>
+                </div>
+                <div class="info-chip" v-if="task.lehrer_name">
+                  <q-icon name="school" />
+                  <span>{{ task.lehrer_name }}</span>
+                </div>
+                <div class="info-chip">
+                  <q-icon name="access_time" />
+                  <span>{{ formatDateTime(task.angemeldet_am) }}</span>
+                </div>
               </div>
             </div>
-            <div class="task-desc">{{ task.beschreibung }}</div>
-            <div class="task-meta">
-              <span v-if="task.datum"
-                ><q-icon name="event" /> {{ formatDate(task.datum) }}</span
-              >
-              <span v-if="task.uhrzeit"
-                ><q-icon name="schedule" />
-                {{ formatTime(task.uhrzeit) }} Uhr</span
-              >
-              <span v-if="task.lehrer_name"
-                ><q-icon name="school" /> {{ task.lehrer_name }}</span
-              >
-              <span><q-icon name="access_time" /> Angemeldet: {{ formatDateTime(task.angemeldet_am) }}</span>
-            </div>
-          </q-card>
-        </div>
-      </div>
-
-      <div v-else-if="user && user.klasse === 'Lehrer'">
-        <h2 class="section-title">Meine übernommene Aufgabe</h2>
-
-        <div v-if="tasks.length === 0" class="no-tasks">
-          <div class="no-task-content">
-            <q-icon name="assignment" size="xl" color="#d32f2f" />
-            <h3>Keine Aufgabe übernommen</h3>
-            <p>Sie haben derzeit keine Aufgabe übernommen.</p>
-            <button class="back-to-main-btn" @click="goBack">
-              <q-icon name="arrow_back" class="q-mr-xs" />
-              Zurück zur Aufgabenübersicht
-            </button>
           </div>
-        </div>
+        </section>
 
-        <div v-else class="lehrer-tasks">
-          <div v-for="task in tasks" :key="task.aufgabeid" class="lehrer-task-section">
-            <q-card class="lehrer-task-card">
-              <div class="lehrer-task-header">
-                <div class="lehrer-task-info">
-                  <h3 class="task-title">{{ task.titel }}</h3>
-                  <p class="task-desc">{{ task.beschreibung }}</p>
-                  <div class="task-meta">
-                    <span v-if="task.datum"
-                      ><q-icon name="event" /> {{ formatDate(task.datum) }}</span
-                    >
-                    <span v-if="task.uhrzeit"
-                      ><q-icon name="schedule" />
-                      {{ formatTime(task.uhrzeit) }} Uhr</span
-                    >
+        <!-- Teacher View -->
+        <section v-else-if="user && user.klasse === 'Lehrer'">
+          <div class="section-title">
+            <div class="title-icon teacher">
+              <q-icon name="school" />
+            </div>
+            <h2>Übernommene Aufgabe</h2>
+          </div>
+
+          <!-- Empty State -->
+          <div v-if="tasks.length === 0" class="empty-container">
+            <div class="empty-content">
+              <div class="empty-illustration teacher">
+                <q-icon name="assignment_turned_in" />
+              </div>
+              <h3>Keine Aufgabe übernommen</h3>
+              <p>Sie haben derzeit keine Aufgabe übernommen.</p>
+              <button class="cta-button" @click="goBack">
+                <q-icon name="arrow_back" />
+                Zur Übersicht
+              </button>
+            </div>
+          </div>
+
+          <!-- Teacher Dashboard -->
+          <div v-else class="teacher-panel">
+            <div v-for="task in tasks" :key="task.aufgabeid" class="task-management">
+              
+              <!-- Task Info Card -->
+              <div class="task-info-card">
+                <div class="task-info-content">
+                  <h3>{{ task.titel }}</h3>
+                  <p>{{ task.beschreibung }}</p>
+                  <div class="task-details">
+                    <span v-if="task.datum">
+                      <q-icon name="event" /> {{ formatDate(task.datum) }}
+                    </span>
+                    <span v-if="task.uhrzeit">
+                      <q-icon name="schedule" /> {{ formatTime(task.uhrzeit) }} Uhr
+                    </span>
                   </div>
                 </div>
-                <div class="header-actions">
-                  <button class="refresh-btn" @click="loadSchuelerForTask(task.aufgabeid)">
+                <div class="task-info-actions">
+                  <button class="icon-btn refresh" @click="loadSchuelerForTask(task.aufgabeid)">
                     <q-icon name="refresh" />
-                    Aktualisieren
+                    <span>Aktualisieren</span>
                   </button>
-                  <button class="abmelde-btn" @click="lehrerAbmelden">
+                  <button class="icon-btn danger" @click="lehrerAbmelden">
                     <q-icon name="logout" />
-                    Von Aufgabe abmelden
+                    <span>Abmelden</span>
                   </button>
                 </div>
               </div>
 
-              <div class="schueler-listen-container">
+              <!-- Students Management -->
+              <div class="students-management">
+                
+                <!-- Pending Students -->
+                <div class="student-group" v-if="getAllSchuelerForTask(task.aufgabeid).length > 0">
+                  <div class="group-header">
+                    <h4>
+                      <q-icon name="people" />
+                      Angemeldete Schüler
+                      <span class="counter">{{ getAllSchuelerForTask(task.aufgabeid).length }}</span>
+                    </h4>
+                  </div>
 
-                <div class="schueler-list-section" v-if="getAllSchuelerForTask(task.aufgabeid).length > 0">
-                  <h4 class="schueler-list-title">
-                    Angemeldete Schüler
-                    <span class="schueler-count">({{ getAllSchuelerForTask(task.aufgabeid).length }})</span>
-                  </h4>
-
-                  <div class="schueler-list">
+                  <div class="student-grid">
                     <div v-for="schueler in getAllSchuelerForTask(task.aufgabeid)"
                          :key="schueler.anmeldung_id"
-                         class="schueler-item"
-                         :class="{
-                           'rejected-item': schueler.status === 'abgelehnt',
-                           'confirmed-item': schueler.status === 'bestätigt'
-                         }">
-                      <div class="schueler-info">
-                        <div class="schueler-name">{{ schueler.name }}</div>
-                        <div class="schueler-email">{{ schueler.email }}</div>
-                        <div class="schueler-klasse">{{ schueler.klasse }}</div>
-                        <div class="anmelde-time">
-                          Angemeldet: {{ formatDateTime(schueler.angemeldet_am) }}
+                         class="student-box"
+                         :class="{'is-rejected': schueler.status === 'abgelehnt', 'is-confirmed': schueler.status === 'bestätigt'}">
+                      
+                      <div class="student-profile">
+                        <div class="profile-avatar">
+                          {{ schueler.name.charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="profile-data">
+                          <span class="profile-name">{{ schueler.name }}</span>
+                          <span class="profile-email">{{ schueler.email }}</span>
+                          <span class="profile-class">{{ schueler.klasse }}</span>
+                          <span class="profile-timestamp">
+                            <q-icon name="access_time" size="xs" />
+                            {{ formatDateTime(schueler.angemeldet_am) }}
+                          </span>
                         </div>
                       </div>
 
-                      <div class="schueler-actions">
-                        <div class="schueler-status" :class="getStatusClass(schueler.status)">
+                      <div class="student-controls">
+                        <span class="badge" :class="getStatusClass(schueler.status)">
                           {{ getStatusText(schueler.status) }}
-                        </div>
+                        </span>
 
-                        <div class="action-buttons" v-if="schueler.status === 'angemeldet'">
-                          <button class="accept-btn" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
-                            <q-icon name="check" />
-                            Bestätigen
+                        <div class="control-btns" v-if="schueler.status === 'angemeldet'">
+                          <button class="control-btn approve" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
+                            <q-icon name="check" /> Bestätigen
                           </button>
-                          <button class="reject-btn" @click="updateSchuelerStatus(schueler.anmeldung_id, 'abgelehnt')">
-                            <q-icon name="close" />
-                            Ablehnen
-                          </button>
-                        </div>
-
-                        <div class="action-buttons" v-else-if="schueler.status === 'abgelehnt'">
-                          <button class="accept-btn" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
-                            <q-icon name="check" />
-                            Bestätigen
-                          </button>
-                          <button class="reset-btn" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
-                            <q-icon name="replay" />
-                            Zurücksetzen
+                          <button class="control-btn decline" @click="updateSchuelerStatus(schueler.anmeldung_id, 'abgelehnt')">
+                            <q-icon name="close" /> Ablehnen
                           </button>
                         </div>
 
-                        <div class="action-buttons" v-else-if="schueler.status === 'bestätigt'">
-                          <button class="reset-btn" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
-                            <q-icon name="replay" />
-                            Zurücksetzen
+                        <div class="control-btns" v-else-if="schueler.status === 'abgelehnt'">
+                          <button class="control-btn approve" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
+                            <q-icon name="check" /> Bestätigen
+                          </button>
+                          <button class="control-btn neutral" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
+                            <q-icon name="replay" /> Zurücksetzen
+                          </button>
+                        </div>
+
+                        <div class="control-btns" v-else-if="schueler.status === 'bestätigt'">
+                          <button class="control-btn neutral" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
+                            <q-icon name="replay" /> Zurücksetzen
                           </button>
                         </div>
                       </div>
@@ -174,104 +229,147 @@
                   </div>
                 </div>
 
-                <div class="schueler-list-section" v-if="getConfirmedSchuelerForTask(task.aufgabeid).length > 0">
-                  <h4 class="schueler-list-title confirmed-title">
-                    Bestätigte Schüler
-                    <span class="schueler-count">({{ getConfirmedSchuelerForTask(task.aufgabeid).length }})</span>
-                  </h4>
+                <!-- Confirmed Students -->
+                <div class="student-group confirmed" v-if="getConfirmedSchuelerForTask(task.aufgabeid).length > 0">
+                  <div class="group-header">
+                    <h4>
+                      <q-icon name="verified" />
+                      Bestätigte Schüler
+                      <span class="counter success">{{ getConfirmedSchuelerForTask(task.aufgabeid).length }}</span>
+                    </h4>
+                  </div>
 
-                  <div class="confirmed-list">
+                  <div class="confirmed-grid">
                     <div v-for="schueler in getConfirmedSchuelerForTask(task.aufgabeid)"
                          :key="schueler.anmeldung_id"
-                         class="confirmed-item">
-                      <div class="confirmed-info">
-                        <div class="confirmed-name">{{ schueler.name }}</div>
-                        <div class="confirmed-klasse">{{ schueler.klasse }}</div>
-                        <div class="time-info" v-if="schueler.zeitInfo">
-                          <span v-if="schueler.zeitInfo.startzeit">Start: {{ formatTime(schueler.zeitInfo.startzeit) }}</span>
-                          <span v-if="schueler.zeitInfo.endzeit">Ende: {{ formatTime(schueler.zeitInfo.endzeit) }}</span>
-                          <span v-if="schueler.zeitInfo.dauer">Dauer: {{ schueler.zeitInfo.dauer }} min</span>
+                         class="confirmed-box">
+                      
+                      <div class="confirmed-top">
+                        <div class="confirmed-avatar">
+                          {{ schueler.name.charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="confirmed-info">
+                          <span class="confirmed-name">{{ schueler.name }}</span>
+                          <span class="confirmed-class">{{ schueler.klasse }}</span>
                         </div>
                       </div>
-                      <div class="confirmed-actions">
-                        <div class="time-buttons">
+
+                      <div class="time-display" v-if="schueler.zeitInfo">
+                        <div class="time-block" v-if="schueler.zeitInfo.startzeit">
+                          <span class="time-label">Start</span>
+                          <span class="time-val">{{ formatTime(schueler.zeitInfo.startzeit) }}</span>
+                        </div>
+                        <div class="time-block" v-if="schueler.zeitInfo.endzeit">
+                          <span class="time-label">Ende</span>
+                          <span class="time-val">{{ formatTime(schueler.zeitInfo.endzeit) }}</span>
+                        </div>
+                        <div class="time-block highlight" v-if="schueler.zeitInfo.dauer">
+                          <span class="time-label">Dauer</span>
+                          <span class="time-val">{{ schueler.zeitInfo.dauer }} min</span>
+                        </div>
+                      </div>
+
+                      <div class="confirmed-controls">
+                        <div class="timer-btns">
                           <button v-if="!schueler.zeitInfo || !schueler.zeitInfo.startzeit"
-                                  class="start-btn"
+                                  class="timer-action start"
                                   @click="startZeitErfassung(schueler.anmeldung_id)">
-                            <q-icon name="play_arrow" />
-                            Start
+                            <q-icon name="play_arrow" /> Start
                           </button>
                           <button v-else-if="schueler.zeitInfo.startzeit && !schueler.zeitInfo.endzeit"
-                                  class="stop-btn"
+                                  class="timer-action stop"
                                   @click="stopZeitErfassung(schueler.anmeldung_id)">
-                            <q-icon name="stop" />
-                            Stop
+                            <q-icon name="stop" /> Stop
                           </button>
                           <button v-else
-                                  class="reset-time-btn"
+                                  class="timer-action reset"
                                   @click="resetZeitErfassung(schueler.anmeldung_id)">
-                            <q-icon name="replay" />
-                            Reset
+                            <q-icon name="replay" /> Reset
                           </button>
                         </div>
-                        <button class="status-change-btn" @click="showStatusChangeDialog(schueler)">
-                          <q-icon name="swap_horiz" />
-                          Status ändern
+                        <button class="status-btn" @click="showStatusChangeDialog(schueler)">
+                          <q-icon name="swap_horiz" /> Status
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div v-if="getAllSchuelerForTask(task.aufgabeid).length === 0" class="no-schueler">
-                  Noch keine Schüler angemeldet
+                <!-- No Students -->
+                <div v-if="getAllSchuelerForTask(task.aufgabeid).length === 0" class="no-data">
+                  <q-icon name="group_off" />
+                  <p>Noch keine Schüler angemeldet</p>
                 </div>
-
               </div>
-            </q-card>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div v-else-if="user && user.klasse === 'Admin'">
-        <h2 class="section-title">Admin Übersicht</h2>
-        <div class="no-tasks">
-          Als Admin hast du keine persönlichen Aufgaben.
-        </div>
+        <!-- Admin View -->
+        <section v-else-if="user && user.klasse === 'Admin'">
+          <div class="section-title">
+            <div class="title-icon admin">
+              <q-icon name="admin_panel_settings" />
+            </div>
+            <h2>Admin Übersicht</h2>
+          </div>
+
+          <div class="empty-container">
+            <div class="empty-content">
+              <div class="empty-illustration admin">
+                <q-icon name="admin_panel_settings" />
+              </div>
+              <h3>Admin Account</h3>
+              <p>Als Admin hast du keine persönlichen Aufgaben.</p>
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
 
+    <!-- Status Change Modal -->
     <q-dialog v-model="statusChangeDialog" persistent>
-      <q-card class="status-dialog">
-        <q-card-section class="dialog-header">
-          <div class="dialog-title">Status ändern für {{ selectedSchueler?.name }}</div>
-        </q-card-section>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Status ändern</h3>
+          <p>{{ selectedSchueler?.name }}</p>
+        </div>
 
-        <q-card-section class="dialog-content">
-          <div class="status-options">
-            <button class="status-option" @click="changeSchuelerStatus('angemeldet')">
+        <div class="modal-body">
+          <button class="modal-option" @click="changeSchuelerStatus('angemeldet')">
+            <div class="option-icon pending">
               <q-icon name="schedule" />
-              <span>Nicht bestätigt</span>
-              <small>Zurück zu angemeldeten Schülern</small>
-            </button>
-            <button class="status-option" @click="changeSchuelerStatus('abgelehnt')">
-              <q-icon name="close" />
-              <span>Abmelden</span>
-              <small>Von Aufgabe abmelden</small>
-            </button>
-          </div>
-        </q-card-section>
+            </div>
+            <div class="option-content">
+              <span class="option-title">Nicht bestätigt</span>
+              <span class="option-subtitle">Zurück zu angemeldeten Schülern</span>
+            </div>
+          </button>
 
-        <q-card-actions align="right" class="dialog-actions">
-          <button class="cancel-btn" @click="statusChangeDialog = false">Abbrechen</button>
-        </q-card-actions>
-      </q-card>
+          <button class="modal-option danger" @click="changeSchuelerStatus('abgelehnt')">
+            <div class="option-icon danger">
+              <q-icon name="close" />
+            </div>
+            <div class="option-content">
+              <span class="option-title">Abmelden</span>
+              <span class="option-subtitle">Von Aufgabe abmelden</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-cancel" @click="statusChangeDialog = false">
+            Abbrechen
+          </button>
+        </div>
+      </div>
     </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted} from "vue";
+import { ref, onMounted } from "vue";
 import axios from "axios";
 
 const user = ref(null);
@@ -316,7 +414,6 @@ const loadTasks = async () => {
     tasks.value = [];
   }
 };
-
 
 const loadSchuelerForTask = async (aufgabeid) => {
   try {
@@ -554,21 +651,21 @@ const getStatusText = (status) => {
     case 'bestätigt': return 'Bestätigt ✓';
     case 'abgelehnt': return 'Abgelehnt ✗';
     case 'angemeldet':
-    default: return 'Nicht bestätigt';
+    default: return 'Ausstehend';
   }
 };
 
 const getBadgeClass = () => {
   if (!user.value) return "";
-  if (user.value.klasse === "Admin") return "admin-badge";
-  if (user.value.klasse === "Lehrer") return "lehrer-badge";
-  return "";
+  if (user.value.klasse === "Admin") return "role-admin";
+  if (user.value.klasse === "Lehrer") return "role-teacher";
+  return "role-student";
 };
 
 const getBadgeText = () => {
   if (!user.value) return "";
-  if (user.value.klasse === "Admin") return "Admin Account";
-  if (user.value.klasse === "Lehrer") return "Lehrer Account";
+  if (user.value.klasse === "Admin") return "Admin";
+  if (user.value.klasse === "Lehrer") return "Lehrer";
   return user.value.klasse;
 };
 
@@ -590,580 +687,1147 @@ const goBack = () => {
 </script>
 
 <style scoped>
-.user-tasks-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* ============================================
+   GLOBAL & RESET
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.header {
+.tasks-page {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ============================================
+   ANIMATED BACKGROUND
+   ============================================ */
+.bg-pattern {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: float 20s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  top: -200px;
+  left: -200px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  bottom: -150px;
+  right: -150px;
+  animation-delay: -7s;
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  top: 40%;
+  right: 10%;
+  animation-delay: -14s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 14, 39, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+}
+
+.header-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: white;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(211, 47, 47, 0.1);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.header h1 {
-  font-size: 36px;
-  background: linear-gradient(135deg, #d32f2f, #f44336);
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+}
+
+.nav-btn.logout {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+  border: none;
+}
+
+.nav-btn.logout:hover {
+  box-shadow: 0 8px 24px rgba(255, 71, 87, 0.4);
+}
+
+.header-title {
+  text-align: center;
+}
+
+.header-title h1 {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00d4ff 0%, #00f5a0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
 }
 
-.logout-btn {
-  background: #f44336;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
+.header-title p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
 }
 
-.back-btn {
-  background: #fff;
-  color: #d32f2f;
-  border: 2px solid #d32f2f;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
+.header-user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user-info {
   display: flex;
   align-items: center;
-  margin-right: 8px;
-  cursor: pointer;
+  gap: 12px;
+  padding: 8px 20px 8px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
   transition: all 0.3s ease;
 }
 
-.back-btn:hover {
-  background: #d32f2f;
-  color: white;
-  transform: translateY(-2px);
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.3);
 }
 
-.tasks-list {
+.user-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.user-text {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 2px;
 }
 
-.task-card {
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.08);
-  background: #fff;
-  border-left: 4px solid #d32f2f;
+.user-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.user-role {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.role-admin {
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: #ffffff;
+}
+
+.role-teacher {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+}
+
+.role-student {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+.page-main {
+  position: relative;
+  z-index: 1;
+  padding: 48px 40px;
+  min-height: calc(100vh - 100px);
+}
+
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.title-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+}
+
+.title-icon.teacher {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.3);
+}
+
+.title-icon.admin {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+}
+
+.section-title h2 {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.empty-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.empty-content {
+  text-align: center;
+  max-width: 500px;
+}
+
+.empty-illustration {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 153, 255, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  color: rgba(0, 212, 255, 0.6);
+}
+
+.empty-illustration.teacher {
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.15), rgba(0, 212, 170, 0.15));
+  color: rgba(0, 245, 160, 0.6);
+}
+
+.empty-illustration.admin {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 140, 66, 0.15));
+  color: rgba(255, 107, 53, 0.6);
+}
+
+.empty-content h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.empty-content p {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+}
+
+.cta-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
+}
+
+/* ============================================
+   TASKS CONTAINER (STUDENT VIEW)
+   ============================================ */
+.tasks-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 24px;
+}
+
+.task-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.task-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #00d4ff, #00f5a0);
+}
+
+.task-item:hover {
+  transform: translateY(-6px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 212, 255, 0.15);
 }
 
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.task-title {
+.task-header h3 {
+  font-size: 22px;
   font-weight: 700;
-  font-size: 18px;
-  color: #d32f2f;
+  color: #ffffff;
   flex: 1;
+  line-height: 1.3;
 }
 
-.task-status {
-  padding: 4px 12px;
-  border-radius: 16px;
+.badge {
+  padding: 8px 16px;
+  border-radius: 24px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.status-pending {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+.badge.status-pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
-.status-confirmed {
-  background: #d1edff;
-  color: #0b5ed7;
-  border: 1px solid #9ec5fe;
+.badge.status-confirmed {
+  background: rgba(0, 245, 160, 0.2);
+  color: #00f5a0;
+  border: 1px solid rgba(0, 245, 160, 0.3);
 }
 
-.status-rejected {
-  background: #f8d7da;
-  color: #842029;
-  border: 1px solid #f1aeb5;
+.badge.status-rejected {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.3);
 }
 
 .task-desc {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 12px;
-  line-height: 1.5;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.7;
+  margin-bottom: 24px;
 }
 
-.task-meta {
+.task-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.info-chip {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  font-size: 12px;
-  color: #888;
-}
-
-.task-meta span {
-  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
 }
 
-.lehrer-tasks {
+.info-chip:hover {
+  background: rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+}
+
+.info-chip .q-icon {
+  color: #00d4ff;
+  font-size: 18px;
+}
+
+/* ============================================
+   TEACHER PANEL
+   ============================================ */
+.teacher-panel {
   display: flex;
   flex-direction: column;
+  gap: 32px;
+}
+
+.task-management {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.task-info-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 32px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 245, 160, 0.05));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 32px;
+}
+
+.task-info-content h3 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.task-info-content p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 18px;
+  line-height: 1.6;
+  max-width: 700px;
+}
+
+.task-details {
+  display: flex;
   gap: 24px;
 }
 
-.lehrer-task-card {
-  padding: 0;
+.task-details span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.task-details .q-icon {
+  color: #00d4ff;
+}
+
+.task-info-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.08);
-}
-
-.lehrer-task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.lehrer-task-info {
-  flex: 1;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.refresh-btn {
-  background: #d32f2f;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  color: #ffffff;
   font-size: 14px;
-}
-
-.refresh-btn:hover {
-  background: #b71c1c;
-}
-
-.abmelde-btn {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.abmelde-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
+.icon-btn:hover {
+  transform: translateY(-3px);
 }
 
-.schueler-listen-container {
+.icon-btn.refresh {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  border: none;
+}
+
+.icon-btn.refresh:hover {
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+}
+
+.icon-btn.danger {
+  background: rgba(255, 71, 87, 0.1);
+  border-color: rgba(255, 71, 87, 0.3);
+  color: #ff4757;
+}
+
+.icon-btn.danger:hover {
+  background: rgba(255, 71, 87, 0.2);
+  box-shadow: 0 10px 30px rgba(255, 71, 87, 0.3);
+}
+
+/* ============================================
+   STUDENTS MANAGEMENT
+   ============================================ */
+.students-management {
   padding: 0;
 }
 
-.schueler-list-section {
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
+.student-group {
+  padding: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.schueler-list-section:last-child {
+.student-group:last-child {
   border-bottom: none;
 }
 
-.schueler-list-title {
-  margin: 0 0 16px 0;
-  color: #333;
-  font-size: 18px;
+.group-header {
+  margin-bottom: 24px;
+}
+
+.group-header h4 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.confirmed-title {
-  color: #198754;
+.counter {
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.schueler-count {
-  color: #666;
-  font-size: 14px;
-  font-weight: normal;
+.counter.success {
+  background: rgba(0, 245, 160, 0.2);
+  color: #00f5a0;
 }
 
-.schueler-list {
+.student-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.schueler-item {
+.student-box {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-}
-
-.rejected-item {
-  background: #fef2f2;
-  border-left: 4px solid #dc3545;
-}
-
-.confirmed-item {
-  background: #f0f9ff;
-  border-left: 4px solid #198754;
-}
-
-.schueler-info {
-  flex: 1;
-}
-
-.schueler-name {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.schueler-email {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-
-.schueler-klasse {
-  color: #888;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.anmelde-time {
-  color: #888;
-  font-size: 11px;
-}
-
-.schueler-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.accept-btn, .reject-btn, .reset-btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   transition: all 0.3s ease;
 }
 
-.accept-btn {
-  background: #28a745;
-  color: white;
+.student-box:hover {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(0, 212, 255, 0.3);
 }
 
-.accept-btn:hover {
-  background: #218838;
-  transform: translateY(-1px);
+.student-box.is-rejected {
+  border-left: 4px solid #ff4757;
+  background: rgba(255, 71, 87, 0.05);
 }
 
-.reject-btn {
-  background: #dc3545;
-  color: white;
+.student-box.is-confirmed {
+  border-left: 4px solid #00f5a0;
+  background: rgba(0, 245, 160, 0.05);
 }
 
-.reject-btn:hover {
-  background: #c82333;
-  transform: translateY(-1px);
+.student-profile {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
-.reset-btn {
-  background: #6c757d;
-  color: white;
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
-.reset-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
-}
-
-.confirmed-list {
+.profile-data {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 3px;
 }
 
-.confirmed-item {
+.profile-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.profile-email {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.profile-class {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.profile-timestamp {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #f0f9ff;
-  border: 1px solid #b6d4fe;
-  border-radius: 8px;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 4px;
+}
+
+.student-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.control-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.control-btn.approve {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+}
+
+.control-btn.approve:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 245, 160, 0.4);
+}
+
+.control-btn.decline {
+  background: linear-gradient(135deg, #ff4757, #ff6348);
+  color: #ffffff;
+}
+
+.control-btn.decline:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(255, 71, 87, 0.4);
+}
+
+.control-btn.neutral {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.control-btn.neutral:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+/* ============================================
+   CONFIRMED STUDENTS GRID
+   ============================================ */
+.confirmed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+.confirmed-box {
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.08), rgba(0, 212, 255, 0.05));
+  border: 1px solid rgba(0, 245, 160, 0.2);
+  border-radius: 18px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.confirmed-box:hover {
+  border-color: rgba(0, 245, 160, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 245, 160, 0.2);
+}
+
+.confirmed-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.confirmed-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0a0e27;
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.3);
 }
 
 .confirmed-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .confirmed-name {
-  font-weight: 600;
-  color: #0b5ed7;
-  font-size: 14px;
-}
-
-.confirmed-klasse {
-  color: #666;
-  font-size: 12px;
-}
-
-.time-info {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-  color: #666;
-}
-
-.time-info span {
-  display: block;
-}
-
-.confirmed-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.time-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.start-btn, .stop-btn, .reset-time-btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  transition: all 0.3s ease;
-}
-
-.start-btn {
-  background: #28a745;
-  color: white;
-}
-
-.start-btn:hover {
-  background: #218838;
-  transform: translateY(-1px);
-}
-
-.stop-btn {
-  background: #dc3545;
-  color: white;
-}
-
-.stop-btn:hover {
-  background: #c82333;
-  transform: translateY(-1px);
-}
-
-.reset-time-btn {
-  background: #fd7e14;
-  color: white;
-}
-
-.reset-time-btn:hover {
-  background: #e8590c;
-  transform: translateY(-1px);
-}
-
-.status-change-btn {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  transition: all 0.3s ease;
-}
-
-.status-change-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
-}
-
-.no-schueler {
-  text-align: center;
-  color: #666;
-  padding: 40px;
-  font-style: italic;
-}
-
-.section-title {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-}
-
-.no-tasks {
-  text-align: center;
-  color: #666;
-  padding: 60px 20px;
   font-size: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 2px dashed #dee2e6;
-}
-
-.no-task-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.no-task-content h3 {
-  margin: 0;
-  color: #333;
-}
-
-.no-task-content p {
-  margin: 0;
-  color: #666;
-}
-
-.back-to-main-btn {
-  background: #d32f2f;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-.back-to-main-btn:hover {
-  background: #b71c1c;
-  transform: translateY(-2px);
-}
-
-.admin-badge {
-  background: #7b1fa2;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
   font-weight: 700;
-  font-size: 12px;
+  color: #ffffff;
 }
 
-.lehrer-badge {
-  background: #388e3c;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-weight: 700;
-  font-size: 12px;
+.confirmed-class {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.user-name-section {
+.time-display {
   display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.user-icon {
-  color: #d32f2f;
-}
-
-.status-dialog {
-  width: 400px;
-  max-width: 90vw;
-  border-radius: 12px;
-}
-
-.dialog-header {
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.dialog-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.dialog-content {
-  padding: 20px;
-}
-
-.status-options {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
 }
 
-.status-option {
+.time-block {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  padding: 16px;
-  background: #f8f9fa;}
+  gap: 4px;
+}
 
+.time-block.highlight {
+  margin-left: auto;
+  text-align: right;
+}
+
+.time-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 700;
+}
+
+.time-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.confirmed-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.timer-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.timer-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.timer-action.start {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  color: #0a0e27;
+}
+
+.timer-action.stop {
+  background: linear-gradient(135deg, #ff4757, #ff6348);
+  color: #ffffff;
+}
+
+.timer-action.reset {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  color: #0a0e27;
+}
+
+.timer-action:hover {
+  transform: translateY(-3px);
+}
+
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.status-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+/* ============================================
+   NO DATA STATE
+   ============================================ */
+.no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.no-data .q-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.no-data p {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+.modal-container {
+  background: linear-gradient(135deg, #1a1f3a, #0a0e27);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  width: 460px;
+  max-width: 92vw;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  padding: 28px 32px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 245, 160, 0.05));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.modal-header p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-option {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: left;
+}
+
+.modal-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.4);
+  transform: translateX(6px);
+}
+
+.modal-option.danger:hover {
+  border-color: rgba(255, 71, 87, 0.4);
+}
+
+.option-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.option-icon.pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.option-icon.danger {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+}
+
+.option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.option-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.option-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-cancel {
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1200px) {
+  .header-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .header-actions {
+    justify-content: center;
+  }
+
+  .header-user {
+    justify-content: center;
+  }
+
+  .tasks-container {
+    grid-template-columns: 1fr;
+  }
+
+  .task-info-card {
+    flex-direction: column;
+  }
+
+  .task-info-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-main {
+    padding: 32px 20px;
+  }
+
+  .header-container {
+    padding: 16px 20px;
+  }
+
+  .header-title h1 {
+    font-size: 26px;
+  }
+
+  .nav-btn span {
+    display: none;
+  }
+
+  .nav-btn {
+    padding: 12px;
+  }
+
+  .section-title h2 {
+    font-size: 28px;
+  }
+
+  .student-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .student-controls {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .confirmed-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmed-controls {
+    flex-wrap: wrap;
+  }
+}
 </style>
