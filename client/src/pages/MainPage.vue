@@ -90,7 +90,7 @@
 
           <div class="header-branding">
             <h1>Tag der offenen Tür</h1>
-            <p>HTL Villach</p>
+            <p>HTL WienWest</p>
           </div>
 
           <div class="header-actions-right">
@@ -98,7 +98,9 @@
               <div class="profile-wrapper">
                 <div
                   class="profile-badge"
-                  v-if="currentUser.klasse && currentUser.klasse !== 'Keine Klasse'"
+                  v-if="
+                    currentUser.klasse && currentUser.klasse !== 'Keine Klasse'
+                  "
                   :class="getBadgeClass()"
                 >
                   {{ getBadgeText() }}
@@ -118,7 +120,6 @@
       <!-- Main Area -->
       <main class="app-main">
         <div class="main-container">
-          
           <!-- First Class: Free Day -->
           <div v-if="isFirstClass" class="special-view free-day">
             <div class="special-content">
@@ -127,8 +128,8 @@
               </div>
               <h2>Freier Tag!</h2>
               <p class="special-message">
-                Als Schüler/in der 1. Klasse hast du heute frei und kannst den Tag
-                der offenen Tür genießen.
+                Als Schüler/in der 1. Klasse hast du heute frei und kannst den
+                Tag der offenen Tür genießen.
               </p>
               <div class="benefits-grid">
                 <div class="benefit-item">
@@ -162,8 +163,8 @@
               <h2>Diplomarbeit Präsentation</h2>
               <p class="special-message">
                 Als Schüler/in der 5. Klasse präsentierst du heute deine
-                Diplomarbeit. Diese Präsentation ist verpflichtend und findet den
-                ganzen Tag statt.
+                Diplomarbeit. Diese Präsentation ist verpflichtend und findet
+                den ganzen Tag statt.
               </p>
               <div class="diploma-details">
                 <h3>
@@ -213,12 +214,17 @@
                   <li
                     v-for="(task, i) in visibleTasks"
                     :key="task.aufgabeid || 'placeholder-' + i"
-                    :class="['tab-card', { 'tab-active': visibleStart + i === currentIndex }]"
+                    :class="[
+                      'tab-card',
+                      { 'tab-active': visibleStart + i === currentIndex },
+                    ]"
                     @click="selectIndex(visibleStart + i)"
                   >
                     <div class="tab-inner">
                       <span class="tab-emoji">{{ task?.icon || "📋" }}</span>
-                      <span class="tab-label">{{ task?.titel || "Content" }}</span>
+                      <span class="tab-label">{{
+                        task?.titel || "Content"
+                      }}</span>
                     </div>
                     <span
                       class="tab-highlight"
@@ -310,10 +316,16 @@
                   @click="schuelerAnmelden"
                   :disabled="!activeTask || isAlreadyRegisteredForTask"
                 >
-                  <q-icon :name="isAlreadyRegisteredForTask ? 'check_circle' : 'how_to_reg'" />
+                  <q-icon
+                    :name="
+                      isAlreadyRegisteredForTask ? 'check_circle' : 'how_to_reg'
+                    "
+                  />
                   <span>
                     {{
-                      isAlreadyRegisteredForTask ? "Bereits angemeldet" : "Anmelden"
+                      isAlreadyRegisteredForTask
+                        ? "Bereits angemeldet"
+                        : "Anmelden"
                     }}
                   </span>
                 </button>
@@ -357,7 +369,6 @@
               </ul>
             </section>
           </template>
-
         </div>
       </main>
     </div>
@@ -492,8 +503,7 @@ export default {
         this.currentUser = res.data.user;
 
         if (
-          (!this.currentUser.klasse ||
-            this.currentUser.klasse === "") &&
+          (!this.currentUser.klasse || this.currentUser.klasse === "") &&
           !this.isLehrerAccount() &&
           !this.isAdminAccount()
         ) {
@@ -583,20 +593,17 @@ export default {
     async loadDiplomTask() {
       const userKlasse = this.currentUser.klasse.toLowerCase();
 
-      this.diplomTask =
-        this.tasks.find(
-          (t) =>
-            t.ziel_klassen?.some((z) =>
-              userKlasse.includes(z.toLowerCase())
-            ) &&
-            (t.kategorie === "diplomarbeit" ||
-              t.titel?.toLowerCase().includes("diplom"))
-        ) || {
-          titel: "Diplomarbeit Präsentation",
-          beschreibung: "Präsentation deiner Diplomarbeit den ganzen Tag.",
-          icon: "🎓",
-          uhrzeit: "08:00",
-        };
+      this.diplomTask = this.tasks.find(
+        (t) =>
+          t.ziel_klassen?.some((z) => userKlasse.includes(z.toLowerCase())) &&
+          (t.kategorie === "diplomarbeit" ||
+            t.titel?.toLowerCase().includes("diplom"))
+      ) || {
+        titel: "Diplomarbeit Präsentation",
+        beschreibung: "Präsentation deiner Diplomarbeit den ganzen Tag.",
+        icon: "🎓",
+        uhrzeit: "08:00",
+      };
     },
 
     async schuelerAnmelden() {
@@ -651,8 +658,7 @@ export default {
 
     next() {
       if (!this.filteredTasks.length) return;
-      this.currentIndex =
-        (this.currentIndex + 1) % this.filteredTasks.length;
+      this.currentIndex = (this.currentIndex + 1) % this.filteredTasks.length;
       this.ensureVisible(this.currentIndex);
     },
 
@@ -705,7 +711,8 @@ export default {
   width: 100%;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   position: relative;
   overflow-x: hidden;
 }
@@ -760,7 +767,8 @@ export default {
 }
 
 @keyframes orb-float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -790,8 +798,12 @@ export default {
 }
 
 @keyframes overlay-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .popup-modal {
@@ -910,8 +922,15 @@ export default {
 }
 
 @keyframes loader-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.85; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
 }
 
 .loader-text {
@@ -943,8 +962,14 @@ export default {
 }
 
 @keyframes loader-bounce {
-  0%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-14px); }
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-14px);
+  }
 }
 
 /* ============================================
@@ -1154,7 +1179,7 @@ export default {
 }
 
 .special-view::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
@@ -1163,21 +1188,37 @@ export default {
 }
 
 .special-view.free-day {
-  background: linear-gradient(135deg, rgba(0, 245, 160, 0.1), rgba(0, 212, 170, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 245, 160, 0.1),
+    rgba(0, 212, 170, 0.05)
+  );
   border-color: rgba(0, 245, 160, 0.3);
 }
 
 .special-view.free-day::before {
-  background: radial-gradient(circle, rgba(0, 245, 160, 0.15) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 245, 160, 0.15) 0%,
+    transparent 70%
+  );
 }
 
 .special-view.diploma {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 153, 255, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.1),
+    rgba(0, 153, 255, 0.05)
+  );
   border-color: rgba(0, 212, 255, 0.3);
 }
 
 .special-view.diploma::before {
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 212, 255, 0.15) 0%,
+    transparent 70%
+  );
 }
 
 .special-content {
@@ -1524,7 +1565,11 @@ export default {
   width: 100%;
   height: 100%;
   border: 2px dashed rgba(0, 212, 255, 0.3);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 212, 255, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(0, 212, 255, 0.05)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1559,14 +1604,25 @@ export default {
   transform: translate(-50%, -50%);
   width: 120%;
   height: 120%;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.25) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 212, 255, 0.25) 0%,
+    transparent 70%
+  );
   border-radius: 50%;
   animation: visual-glow-pulse 2s ease-in-out infinite;
 }
 
 @keyframes visual-glow-pulse {
-  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
 }
 
 .visual-label {
@@ -1599,8 +1655,16 @@ export default {
 }
 
 @keyframes decor-bounce {
-  0%, 80%, 100% { transform: scale(1); opacity: 0.5; }
-  40% { transform: scale(1.4); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
 }
 
 .nav-arrow {
