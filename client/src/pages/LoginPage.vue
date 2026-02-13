@@ -25,6 +25,8 @@ const isEmailValid = computed(() => {
 
 
 
+
+
 const isLehrerEmail = computed(() => {
   if (!isRegister.value || !email.value) return false;
   return /^[a-z]+\.[a-z]+@htlwienwest\.at$/.test(email.value.toLowerCase());
