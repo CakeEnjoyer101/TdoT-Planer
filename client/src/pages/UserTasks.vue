@@ -1,13 +1,11 @@
 <template>
   <div class="tasks-page">
-    <!-- Animated Background -->
     <div class="bg-pattern">
       <div class="bg-orb orb-1"></div>
       <div class="bg-orb orb-2"></div>
       <div class="bg-orb orb-3"></div>
     </div>
 
-    <!-- Header Navigation -->
     <header class="page-header">
       <div class="header-container">
         <div class="header-actions">
@@ -46,12 +44,16 @@
       </div>
     </header>
 
-    <!-- Main Content Area -->
     <main class="page-main">
       <div class="content-wrapper">
-        
-        <!-- Student View -->
-        <section v-if="user && user.klasse && user.klasse !== 'Admin' && user.klasse !== 'Lehrer'">
+        <section
+          v-if="
+            user &&
+            user.klasse &&
+            user.klasse !== 'Admin' &&
+            user.klasse !== 'Lehrer'
+          "
+        >
           <div class="section-title">
             <div class="title-icon">
               <q-icon name="assignment" />
@@ -59,7 +61,6 @@
             <h2>Angemeldete Aufgaben</h2>
           </div>
 
-          <!-- Empty State -->
           <div v-if="tasks.length === 0" class="empty-container">
             <div class="empty-content">
               <div class="empty-illustration">
@@ -74,18 +75,21 @@
             </div>
           </div>
 
-          <!-- Tasks List -->
           <div v-else class="tasks-container">
-            <div v-for="task in tasks" :key="task.anmeldung_id" class="task-item">
+            <div
+              v-for="task in tasks"
+              :key="task.anmeldung_id"
+              class="task-item"
+            >
               <div class="task-header">
                 <h3>{{ task.titel }}</h3>
                 <span class="badge" :class="getStatusClass(task.status)">
                   {{ getStatusText(task.status) }}
                 </span>
               </div>
-              
+
               <p class="task-desc">{{ task.beschreibung }}</p>
-              
+
               <div class="task-info">
                 <div class="info-chip" v-if="task.datum">
                   <q-icon name="event" />
@@ -108,7 +112,6 @@
           </div>
         </section>
 
-        <!-- Teacher View -->
         <section v-else-if="user && user.klasse === 'Lehrer'">
           <div class="section-title">
             <div class="title-icon teacher">
@@ -117,7 +120,6 @@
             <h2>Übernommene Aufgabe</h2>
           </div>
 
-          <!-- Empty State -->
           <div v-if="tasks.length === 0" class="empty-container">
             <div class="empty-content">
               <div class="empty-illustration teacher">
@@ -132,11 +134,12 @@
             </div>
           </div>
 
-          <!-- Teacher Dashboard -->
           <div v-else class="teacher-panel">
-            <div v-for="task in tasks" :key="task.aufgabeid" class="task-management">
-              
-              <!-- Task Info Card -->
+            <div
+              v-for="task in tasks"
+              :key="task.aufgabeid"
+              class="task-management"
+            >
               <div class="task-info-card">
                 <div class="task-info-content">
                   <h3>{{ task.titel }}</h3>
@@ -146,12 +149,16 @@
                       <q-icon name="event" /> {{ formatDate(task.datum) }}
                     </span>
                     <span v-if="task.uhrzeit">
-                      <q-icon name="schedule" /> {{ formatTime(task.uhrzeit) }} Uhr
+                      <q-icon name="schedule" />
+                      {{ formatTime(task.uhrzeit) }} Uhr
                     </span>
                   </div>
                 </div>
                 <div class="task-info-actions">
-                  <button class="icon-btn refresh" @click="loadSchuelerForTask(task.aufgabeid)">
+                  <button
+                    class="icon-btn refresh"
+                    @click="loadSchuelerForTask(task.aufgabeid)"
+                  >
                     <q-icon name="refresh" />
                     <span>Aktualisieren</span>
                   </button>
@@ -162,33 +169,43 @@
                 </div>
               </div>
 
-              <!-- Students Management -->
               <div class="students-management">
-                
-                <!-- Pending Students -->
-                <div class="student-group" v-if="getAllSchuelerForTask(task.aufgabeid).length > 0">
+                <div
+                  class="student-group"
+                  v-if="getAllSchuelerForTask(task.aufgabeid).length > 0"
+                >
                   <div class="group-header">
                     <h4>
                       <q-icon name="people" />
                       Angemeldete Schüler
-                      <span class="counter">{{ getAllSchuelerForTask(task.aufgabeid).length }}</span>
+                      <span class="counter">{{
+                        getAllSchuelerForTask(task.aufgabeid).length
+                      }}</span>
                     </h4>
                   </div>
 
                   <div class="student-grid">
-                    <div v-for="schueler in getAllSchuelerForTask(task.aufgabeid)"
-                         :key="schueler.anmeldung_id"
-                         class="student-box"
-                         :class="{'is-rejected': schueler.status === 'abgelehnt', 'is-confirmed': schueler.status === 'bestätigt'}">
-                      
+                    <div
+                      v-for="schueler in getAllSchuelerForTask(task.aufgabeid)"
+                      :key="schueler.anmeldung_id"
+                      class="student-box"
+                      :class="{
+                        'is-rejected': schueler.status === 'abgelehnt',
+                        'is-confirmed': schueler.status === 'bestätigt',
+                      }"
+                    >
                       <div class="student-profile">
                         <div class="profile-avatar">
                           {{ schueler.name.charAt(0).toUpperCase() }}
                         </div>
                         <div class="profile-data">
                           <span class="profile-name">{{ schueler.name }}</span>
-                          <span class="profile-email">{{ schueler.email }}</span>
-                          <span class="profile-class">{{ schueler.klasse }}</span>
+                          <span class="profile-email">{{
+                            schueler.email
+                          }}</span>
+                          <span class="profile-class">{{
+                            schueler.klasse
+                          }}</span>
                           <span class="profile-timestamp">
                             <q-icon name="access_time" size="xs" />
                             {{ formatDateTime(schueler.angemeldet_am) }}
@@ -197,30 +214,82 @@
                       </div>
 
                       <div class="student-controls">
-                        <span class="badge" :class="getStatusClass(schueler.status)">
+                        <span
+                          class="badge"
+                          :class="getStatusClass(schueler.status)"
+                        >
                           {{ getStatusText(schueler.status) }}
                         </span>
 
-                        <div class="control-btns" v-if="schueler.status === 'angemeldet'">
-                          <button class="control-btn approve" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
+                        <div
+                          class="control-btns"
+                          v-if="schueler.status === 'angemeldet'"
+                        >
+                          <button
+                            class="control-btn approve"
+                            @click="
+                              updateSchuelerStatus(
+                                schueler.anmeldung_id,
+                                'bestätigt'
+                              )
+                            "
+                          >
                             <q-icon name="check" /> Bestätigen
                           </button>
-                          <button class="control-btn decline" @click="updateSchuelerStatus(schueler.anmeldung_id, 'abgelehnt')">
+                          <button
+                            class="control-btn decline"
+                            @click="
+                              updateSchuelerStatus(
+                                schueler.anmeldung_id,
+                                'abgelehnt'
+                              )
+                            "
+                          >
                             <q-icon name="close" /> Ablehnen
                           </button>
                         </div>
 
-                        <div class="control-btns" v-else-if="schueler.status === 'abgelehnt'">
-                          <button class="control-btn approve" @click="updateSchuelerStatus(schueler.anmeldung_id, 'bestätigt')">
+                        <div
+                          class="control-btns"
+                          v-else-if="schueler.status === 'abgelehnt'"
+                        >
+                          <button
+                            class="control-btn approve"
+                            @click="
+                              updateSchuelerStatus(
+                                schueler.anmeldung_id,
+                                'bestätigt'
+                              )
+                            "
+                          >
                             <q-icon name="check" /> Bestätigen
                           </button>
-                          <button class="control-btn neutral" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
+                          <button
+                            class="control-btn neutral"
+                            @click="
+                              updateSchuelerStatus(
+                                schueler.anmeldung_id,
+                                'angemeldet'
+                              )
+                            "
+                          >
                             <q-icon name="replay" /> Zurücksetzen
                           </button>
                         </div>
 
-                        <div class="control-btns" v-else-if="schueler.status === 'bestätigt'">
-                          <button class="control-btn neutral" @click="updateSchuelerStatus(schueler.anmeldung_id, 'angemeldet')">
+                        <div
+                          class="control-btns"
+                          v-else-if="schueler.status === 'bestätigt'"
+                        >
+                          <button
+                            class="control-btn neutral"
+                            @click="
+                              updateSchuelerStatus(
+                                schueler.anmeldung_id,
+                                'angemeldet'
+                              )
+                            "
+                          >
                             <q-icon name="replay" /> Zurücksetzen
                           </button>
                         </div>
@@ -229,65 +298,105 @@
                   </div>
                 </div>
 
-                <!-- Confirmed Students -->
-                <div class="student-group confirmed" v-if="getConfirmedSchuelerForTask(task.aufgabeid).length > 0">
+                <div
+                  class="student-group confirmed"
+                  v-if="getConfirmedSchuelerForTask(task.aufgabeid).length > 0"
+                >
                   <div class="group-header">
                     <h4>
                       <q-icon name="verified" />
                       Bestätigte Schüler
-                      <span class="counter success">{{ getConfirmedSchuelerForTask(task.aufgabeid).length }}</span>
+                      <span class="counter success">{{
+                        getConfirmedSchuelerForTask(task.aufgabeid).length
+                      }}</span>
                     </h4>
                   </div>
 
                   <div class="confirmed-grid">
-                    <div v-for="schueler in getConfirmedSchuelerForTask(task.aufgabeid)"
-                         :key="schueler.anmeldung_id"
-                         class="confirmed-box">
-                      
+                    <div
+                      v-for="schueler in getConfirmedSchuelerForTask(
+                        task.aufgabeid
+                      )"
+                      :key="schueler.anmeldung_id"
+                      class="confirmed-box"
+                    >
                       <div class="confirmed-top">
                         <div class="confirmed-avatar">
                           {{ schueler.name.charAt(0).toUpperCase() }}
                         </div>
                         <div class="confirmed-info">
-                          <span class="confirmed-name">{{ schueler.name }}</span>
-                          <span class="confirmed-class">{{ schueler.klasse }}</span>
+                          <span class="confirmed-name">{{
+                            schueler.name
+                          }}</span>
+                          <span class="confirmed-class">{{
+                            schueler.klasse
+                          }}</span>
                         </div>
                       </div>
 
                       <div class="time-display" v-if="schueler.zeitInfo">
-                        <div class="time-block" v-if="schueler.zeitInfo.startzeit">
+                        <div
+                          class="time-block"
+                          v-if="schueler.zeitInfo.startzeit"
+                        >
                           <span class="time-label">Start</span>
-                          <span class="time-val">{{ formatTime(schueler.zeitInfo.startzeit) }}</span>
+                          <span class="time-val">{{
+                            formatTime(schueler.zeitInfo.startzeit)
+                          }}</span>
                         </div>
-                        <div class="time-block" v-if="schueler.zeitInfo.endzeit">
+                        <div
+                          class="time-block"
+                          v-if="schueler.zeitInfo.endzeit"
+                        >
                           <span class="time-label">Ende</span>
-                          <span class="time-val">{{ formatTime(schueler.zeitInfo.endzeit) }}</span>
+                          <span class="time-val">{{
+                            formatTime(schueler.zeitInfo.endzeit)
+                          }}</span>
                         </div>
-                        <div class="time-block highlight" v-if="schueler.zeitInfo.dauer">
+                        <div
+                          class="time-block highlight"
+                          v-if="schueler.zeitInfo.dauer"
+                        >
                           <span class="time-label">Dauer</span>
-                          <span class="time-val">{{ schueler.zeitInfo.dauer }} min</span>
+                          <span class="time-val"
+                            >{{ schueler.zeitInfo.dauer }} min</span
+                          >
                         </div>
                       </div>
 
                       <div class="confirmed-controls">
                         <div class="timer-btns">
-                          <button v-if="!schueler.zeitInfo || !schueler.zeitInfo.startzeit"
-                                  class="timer-action start"
-                                  @click="startZeitErfassung(schueler.anmeldung_id)">
+                          <button
+                            v-if="
+                              !schueler.zeitInfo || !schueler.zeitInfo.startzeit
+                            "
+                            class="timer-action start"
+                            @click="startZeitErfassung(schueler.anmeldung_id)"
+                          >
                             <q-icon name="play_arrow" /> Start
                           </button>
-                          <button v-else-if="schueler.zeitInfo.startzeit && !schueler.zeitInfo.endzeit"
-                                  class="timer-action stop"
-                                  @click="stopZeitErfassung(schueler.anmeldung_id)">
+                          <button
+                            v-else-if="
+                              schueler.zeitInfo.startzeit &&
+                              !schueler.zeitInfo.endzeit
+                            "
+                            class="timer-action stop"
+                            @click="stopZeitErfassung(schueler.anmeldung_id)"
+                          >
                             <q-icon name="stop" /> Stop
                           </button>
-                          <button v-else
-                                  class="timer-action reset"
-                                  @click="resetZeitErfassung(schueler.anmeldung_id)">
+                          <button
+                            v-else
+                            class="timer-action reset"
+                            @click="resetZeitErfassung(schueler.anmeldung_id)"
+                          >
                             <q-icon name="replay" /> Reset
                           </button>
                         </div>
-                        <button class="status-btn" @click="showStatusChangeDialog(schueler)">
+                        <button
+                          class="status-btn"
+                          @click="showStatusChangeDialog(schueler)"
+                        >
                           <q-icon name="swap_horiz" /> Status
                         </button>
                       </div>
@@ -295,8 +404,10 @@
                   </div>
                 </div>
 
-                <!-- No Students -->
-                <div v-if="getAllSchuelerForTask(task.aufgabeid).length === 0" class="no-data">
+                <div
+                  v-if="getAllSchuelerForTask(task.aufgabeid).length === 0"
+                  class="no-data"
+                >
                   <q-icon name="group_off" />
                   <p>Noch keine Schüler angemeldet</p>
                 </div>
@@ -305,7 +416,6 @@
           </div>
         </section>
 
-        <!-- Admin View -->
         <section v-else-if="user && user.klasse === 'Admin'">
           <div class="section-title">
             <div class="title-icon admin">
@@ -324,11 +434,9 @@
             </div>
           </div>
         </section>
-
       </div>
     </main>
 
-    <!-- Status Change Modal -->
     <q-dialog v-model="statusChangeDialog" persistent>
       <div class="modal-container">
         <div class="modal-header">
@@ -337,17 +445,25 @@
         </div>
 
         <div class="modal-body">
-          <button class="modal-option" @click="changeSchuelerStatus('angemeldet')">
+          <button
+            class="modal-option"
+            @click="changeSchuelerStatus('angemeldet')"
+          >
             <div class="option-icon pending">
               <q-icon name="schedule" />
             </div>
             <div class="option-content">
               <span class="option-title">Nicht bestätigt</span>
-              <span class="option-subtitle">Zurück zu angemeldeten Schülern</span>
+              <span class="option-subtitle"
+                >Zurück zu angemeldeten Schülern</span
+              >
             </div>
           </button>
 
-          <button class="modal-option danger" @click="changeSchuelerStatus('abgelehnt')">
+          <button
+            class="modal-option danger"
+            @click="changeSchuelerStatus('abgelehnt')"
+          >
             <div class="option-icon danger">
               <q-icon name="close" />
             </div>
@@ -394,9 +510,9 @@ const loadUser = async () => {
 const loadTasks = async () => {
   try {
     const url =
-      user.value.klasse === 'Admin'
-        ? 'http://localhost:3000/aufgaben'
-        : 'http://localhost:3000/user/aufgaben';
+      user.value.klasse === "Admin"
+        ? "http://localhost:3000/aufgaben"
+        : "http://localhost:3000/user/aufgaben";
 
     const res = await axios.get(url, {
       withCredentials: true,
@@ -404,7 +520,7 @@ const loadTasks = async () => {
 
     tasks.value = res.data;
 
-    if (user.value.klasse === 'Lehrer') {
+    if (user.value.klasse === "Lehrer") {
       for (const task of tasks.value) {
         await loadSchuelerForTask(task.aufgabeid);
       }
@@ -417,15 +533,18 @@ const loadTasks = async () => {
 
 const loadSchuelerForTask = async (aufgabeid) => {
   try {
-    const res = await axios.get(`http://localhost:3000/aufgaben/${aufgabeid}/schueler`, {
-      withCredentials: true,
-    });
-    schuelerListen.value[aufgabeid] = res.data.map(schueler => ({
+    const res = await axios.get(
+      `http://localhost:3000/aufgaben/${aufgabeid}/schueler`,
+      {
+        withCredentials: true,
+      }
+    );
+    schuelerListen.value[aufgabeid] = res.data.map((schueler) => ({
       ...schueler,
-      zeitInfo: schueler.zeit_info || null
+      zeitInfo: schueler.zeit_info || null,
     }));
   } catch (err) {
-    console.error('Fehler beim Laden der Schüler:', err);
+    console.error("Fehler beim Laden der Schüler:", err);
     schuelerListen.value[aufgabeid] = [];
   }
 };
@@ -435,7 +554,9 @@ const getAllSchuelerForTask = (aufgabeid) => {
 };
 
 const getConfirmedSchuelerForTask = (aufgabeid) => {
-  return getAllSchuelerForTask(aufgabeid).filter(s => s.status === 'bestätigt');
+  return getAllSchuelerForTask(aufgabeid).filter(
+    (s) => s.status === "bestätigt"
+  );
 };
 
 const updateSchuelerStatus = async (anmeldung_id, status) => {
@@ -447,15 +568,17 @@ const updateSchuelerStatus = async (anmeldung_id, status) => {
     );
 
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === anmeldung_id
+      );
       if (schueler) {
         schueler.status = status;
         break;
       }
     }
   } catch (err) {
-    console.error('Fehler beim Aktualisieren des Status:', err);
-    alert('Fehler beim Aktualisieren des Status');
+    console.error("Fehler beim Aktualisieren des Status:", err);
+    alert("Fehler beim Aktualisieren des Status");
   }
 };
 
@@ -469,7 +592,9 @@ const startZeitErfassung = async (anmeldung_id) => {
     );
 
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === anmeldung_id
+      );
       if (schueler) {
         schueler.zeitInfo = res.data.zeitInfo;
         break;
@@ -478,11 +603,11 @@ const startZeitErfassung = async (anmeldung_id) => {
 
     zeitErfassung.value[anmeldung_id] = {
       startzeit,
-      timer: setInterval(() => updateLiveDuration(anmeldung_id), 1000)
+      timer: setInterval(() => updateLiveDuration(anmeldung_id), 1000),
     };
   } catch (err) {
-    console.error('Fehler beim Starten der Zeit:', err);
-    alert('Fehler beim Starten der Zeit');
+    console.error("Fehler beim Starten der Zeit:", err);
+    alert("Fehler beim Starten der Zeit");
   }
 };
 
@@ -501,15 +626,17 @@ const stopZeitErfassung = async (anmeldung_id) => {
     }
 
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === anmeldung_id
+      );
       if (schueler) {
         schueler.zeitInfo = res.data.zeitInfo;
         break;
       }
     }
   } catch (err) {
-    console.error('Fehler beim Stoppen der Zeit:', err);
-    alert('Fehler beim Stoppen der Zeit');
+    console.error("Fehler beim Stoppen der Zeit:", err);
+    alert("Fehler beim Stoppen der Zeit");
   }
 };
 
@@ -526,15 +653,17 @@ const resetZeitErfassung = async (anmeldung_id) => {
     }
 
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === anmeldung_id
+      );
       if (schueler) {
         schueler.zeitInfo = null;
         break;
       }
     }
   } catch (err) {
-    console.error('Fehler beim Zurücksetzen der Zeit:', err);
-    alert('Fehler beim Zurücksetzen der Zeit');
+    console.error("Fehler beim Zurücksetzen der Zeit:", err);
+    alert("Fehler beim Zurücksetzen der Zeit");
   }
 };
 
@@ -542,9 +671,13 @@ const updateLiveDuration = (anmeldung_id) => {
   const timerData = zeitErfassung.value[anmeldung_id];
   if (timerData) {
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === anmeldung_id
+      );
       if (schueler && schueler.zeitInfo) {
-        const currentDuration = Math.round((new Date() - new Date(timerData.startzeit)) / (1000 * 60));
+        const currentDuration = Math.round(
+          (new Date() - new Date(timerData.startzeit)) / (1000 * 60)
+        );
         schueler.zeitInfo.dauer = currentDuration;
         break;
       }
@@ -568,7 +701,9 @@ const changeSchuelerStatus = async (status) => {
     );
 
     for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(s => s.anmeldung_id === selectedSchueler.value.anmeldung_id);
+      const schueler = schuelerListen.value[aufgabeid].find(
+        (s) => s.anmeldung_id === selectedSchueler.value.anmeldung_id
+      );
       if (schueler) {
         schueler.status = status;
         break;
@@ -578,13 +713,17 @@ const changeSchuelerStatus = async (status) => {
     statusChangeDialog.value = false;
     selectedSchueler.value = null;
   } catch (err) {
-    console.error('Fehler beim Ändern des Status:', err);
-    alert('Fehler beim Ändern des Status');
+    console.error("Fehler beim Ändern des Status:", err);
+    alert("Fehler beim Ändern des Status");
   }
 };
 
 const lehrerAbmelden = async () => {
-  if (!confirm('Möchten Sie sich wirklich von dieser Aufgabe abmelden? Alle Schüler-Anmeldungen bleiben erhalten.')) {
+  if (
+    !confirm(
+      "Möchten Sie sich wirklich von dieser Aufgabe abmelden? Alle Schüler-Anmeldungen bleiben erhalten."
+    )
+  ) {
     return;
   }
 
@@ -595,11 +734,11 @@ const lehrerAbmelden = async () => {
       { withCredentials: true }
     );
 
-    alert('Erfolgreich von der Aufgabe abgemeldet!');
+    alert("Erfolgreich von der Aufgabe abgemeldet!");
     await loadTasks();
   } catch (err) {
-    console.error('Fehler beim Abmelden:', err);
-    alert('Fehler beim Abmelden von der Aufgabe');
+    console.error("Fehler beim Abmelden:", err);
+    alert("Fehler beim Abmelden von der Aufgabe");
   }
 };
 
@@ -626,7 +765,10 @@ const formatDate = (dateString) => {
 const formatTime = (timeString) => {
   if (!timeString) return "";
   if (timeString instanceof Date) {
-    return timeString.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' });
+    return timeString.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
   return timeString.substring(0, 5);
 };
@@ -639,19 +781,25 @@ const formatDateTime = (dateTimeString) => {
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'bestätigt': return 'status-confirmed';
-    case 'abgelehnt': return 'status-rejected';
-    case 'angemeldet':
-    default: return 'status-pending';
+    case "bestätigt":
+      return "status-confirmed";
+    case "abgelehnt":
+      return "status-rejected";
+    case "angemeldet":
+    default:
+      return "status-pending";
   }
 };
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'bestätigt': return 'Bestätigt ✓';
-    case 'abgelehnt': return 'Abgelehnt ✗';
-    case 'angemeldet':
-    default: return 'Ausstehend';
+    case "bestätigt":
+      return "Bestätigt ✓";
+    case "abgelehnt":
+      return "Abgelehnt ✗";
+    case "angemeldet":
+    default:
+      return "Ausstehend";
   }
 };
 
@@ -687,9 +835,6 @@ const goBack = () => {
 </script>
 
 <style scoped>
-/* ============================================
-   GLOBAL & RESET
-   ============================================ */
 * {
   margin: 0;
   padding: 0;
@@ -701,14 +846,12 @@ const goBack = () => {
   width: 100%;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   position: relative;
   overflow-x: hidden;
 }
 
-/* ============================================
-   ANIMATED BACKGROUND
-   ============================================ */
 .bg-pattern {
   position: fixed;
   top: 0;
@@ -756,7 +899,8 @@ const goBack = () => {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -767,9 +911,6 @@ const goBack = () => {
   }
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
 .page-header {
   position: sticky;
   top: 0;
@@ -918,9 +1059,6 @@ const goBack = () => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* ============================================
-   MAIN CONTENT
-   ============================================ */
 .page-main {
   position: relative;
   z-index: 1;
@@ -970,9 +1108,6 @@ const goBack = () => {
   letter-spacing: -0.5px;
 }
 
-/* ============================================
-   EMPTY STATE
-   ============================================ */
 .empty-container {
   display: flex;
   align-items: center;
@@ -994,7 +1129,11 @@ const goBack = () => {
   height: 120px;
   margin: 0 auto 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 153, 255, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.15),
+    rgba(0, 153, 255, 0.15)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1003,12 +1142,20 @@ const goBack = () => {
 }
 
 .empty-illustration.teacher {
-  background: linear-gradient(135deg, rgba(0, 245, 160, 0.15), rgba(0, 212, 170, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 245, 160, 0.15),
+    rgba(0, 212, 170, 0.15)
+  );
   color: rgba(0, 245, 160, 0.6);
 }
 
 .empty-illustration.admin {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 140, 66, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 53, 0.15),
+    rgba(255, 140, 66, 0.15)
+  );
   color: rgba(255, 107, 53, 0.6);
 }
 
@@ -1047,9 +1194,6 @@ const goBack = () => {
   box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
 }
 
-/* ============================================
-   TASKS CONTAINER (STUDENT VIEW)
-   ============================================ */
 .tasks-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -1067,7 +1211,7 @@ const goBack = () => {
 }
 
 .task-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -1163,9 +1307,6 @@ const goBack = () => {
   font-size: 18px;
 }
 
-/* ============================================
-   TEACHER PANEL
-   ============================================ */
 .teacher-panel {
   display: flex;
   flex-direction: column;
@@ -1185,7 +1326,11 @@ const goBack = () => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 32px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 245, 160, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.08),
+    rgba(0, 245, 160, 0.05)
+  );
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 32px;
 }
@@ -1268,9 +1413,6 @@ const goBack = () => {
   box-shadow: 0 10px 30px rgba(255, 71, 87, 0.3);
 }
 
-/* ============================================
-   STUDENTS MANAGEMENT
-   ============================================ */
 .students-management {
   padding: 0;
 }
@@ -1450,9 +1592,6 @@ const goBack = () => {
   transform: translateY(-3px);
 }
 
-/* ============================================
-   CONFIRMED STUDENTS GRID
-   ============================================ */
 .confirmed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -1460,7 +1599,11 @@ const goBack = () => {
 }
 
 .confirmed-box {
-  background: linear-gradient(135deg, rgba(0, 245, 160, 0.08), rgba(0, 212, 255, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 245, 160, 0.08),
+    rgba(0, 212, 255, 0.05)
+  );
   border: 1px solid rgba(0, 245, 160, 0.2);
   border-radius: 18px;
   padding: 24px;
@@ -1608,9 +1751,6 @@ const goBack = () => {
   transform: translateY(-3px);
 }
 
-/* ============================================
-   NO DATA STATE
-   ============================================ */
 .no-data {
   display: flex;
   flex-direction: column;
@@ -1631,9 +1771,6 @@ const goBack = () => {
   font-weight: 500;
 }
 
-/* ============================================
-   MODAL
-   ============================================ */
 .modal-container {
   background: linear-gradient(135deg, #1a1f3a, #0a0e27);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1646,7 +1783,11 @@ const goBack = () => {
 
 .modal-header {
   padding: 28px 32px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 245, 160, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.1),
+    rgba(0, 245, 160, 0.05)
+  );
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1754,9 +1895,6 @@ const goBack = () => {
   color: #ffffff;
 }
 
-/* ============================================
-   RESPONSIVE DESIGN
-   ============================================ */
 @media (max-width: 1200px) {
   .header-container {
     grid-template-columns: 1fr;

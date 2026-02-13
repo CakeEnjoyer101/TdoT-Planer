@@ -11,8 +11,6 @@ const success = ref(null);
 const isLoading = ref(false);
 const isRegister = ref(false);
 
-/* ================= VALIDIERUNG ================= */
-
 const isEmailValid = computed(() => {
   if (!isRegister.value || !email.value) return true;
 
@@ -36,8 +34,6 @@ const emailHint = computed(() => {
   if (isLehrerEmail.value) return "Lehrer-Account erkannt";
   return "";
 });
-
-/* ================= SUBMIT ================= */
 
 async function handleSubmit() {
   error.value = null;
@@ -96,7 +92,6 @@ function toggleMode() {
 
 <template>
   <div class="login-container">
-    <!-- Animated Background -->
     <div class="background-pattern">
       <div class="grid-pattern"></div>
       <div class="gradient-orb orb-1"></div>
@@ -105,7 +100,6 @@ function toggleMode() {
     </div>
 
     <div class="content-wrapper">
-      <!-- Left Side: Branding -->
       <div class="branding-section">
         <div class="branding-content">
           <div class="logo-wrapper">
@@ -115,12 +109,17 @@ function toggleMode() {
               </div>
             </div>
           </div>
-          
+
           <h1 class="school-title">HTL Wien West</h1>
           <p class="school-subtitle">Aufgaben Planner</p>
-          
+
           <div class="feature-list">
-            <div class="feature-item" v-for="(feature, i) in features" :key="i" :style="{ animationDelay: `${i * 0.1}s` }">
+            <div
+              class="feature-item"
+              v-for="(feature, i) in features"
+              :key="i"
+              :style="{ animationDelay: `${i * 0.1}s` }"
+            >
               <q-icon :name="feature.icon" class="feature-icon" />
               <span class="feature-text">{{ feature.text }}</span>
             </div>
@@ -128,7 +127,6 @@ function toggleMode() {
         </div>
       </div>
 
-      <!-- Right Side: Form -->
       <div class="form-section">
         <q-card class="login-card">
           <q-card-section class="card-content">
@@ -137,7 +135,11 @@ function toggleMode() {
                 {{ isRegister ? "Account erstellen" : "Willkommen zurück" }}
               </h2>
               <p class="form-subtitle">
-                {{ isRegister ? "Registriere dich mit deiner Schul-Email" : "Melde dich an, um fortzufahren" }}
+                {{
+                  isRegister
+                    ? "Registriere dich mit deiner Schul-Email"
+                    : "Melde dich an, um fortzufahren"
+                }}
               </p>
             </div>
 
@@ -188,10 +190,13 @@ function toggleMode() {
                   outlined
                   required
                   color="red-7"
-                  :placeholder="isRegister ? 'Mindestens 6 Zeichen' : '••••••••'"
+                  :placeholder="
+                    isRegister ? 'Mindestens 6 Zeichen' : '••••••••'
+                  "
                   :rules="[
                     (v) => !!v || 'Passwort ist erforderlich',
-                    (v) => !isRegister || v.length >= 6 || 'Mindestens 6 Zeichen',
+                    (v) =>
+                      !isRegister || v.length >= 6 || 'Mindestens 6 Zeichen',
                   ]"
                   class="custom-input"
                 >
@@ -211,8 +216,13 @@ function toggleMode() {
                 :disable="isLoading"
               >
                 <span class="btn-content">
-                  <q-icon :name="isRegister ? 'person_add' : 'login'" size="20px" />
-                  <span>{{ isRegister ? "Jetzt registrieren" : "Anmelden" }}</span>
+                  <q-icon
+                    :name="isRegister ? 'person_add' : 'login'"
+                    size="20px"
+                  />
+                  <span>{{
+                    isRegister ? "Jetzt registrieren" : "Anmelden"
+                  }}</span>
                 </span>
               </q-btn>
 
@@ -220,13 +230,12 @@ function toggleMode() {
                 <span class="divider-text">oder</span>
               </div>
 
-              <q-btn
-                flat
-                color="grey-7"
-                class="toggle-btn"
-                @click="toggleMode"
-              >
-                {{ isRegister ? "Bereits registriert? Anmelden" : "Noch kein Account? Registrieren" }}
+              <q-btn flat color="grey-7" class="toggle-btn" @click="toggleMode">
+                {{
+                  isRegister
+                    ? "Bereits registriert? Anmelden"
+                    : "Noch kein Account? Registrieren"
+                }}
               </q-btn>
             </q-form>
 
@@ -262,23 +271,21 @@ export default {
         { icon: "task_alt", text: "Aufgaben organisieren" },
         { icon: "event", text: "Termine verwalten" },
         { icon: "groups", text: "Mit Lehrern zusammenarbeiten" },
-        { icon: "analytics", text: "Fortschritt tracken" }
-      ]
+        { icon: "analytics", text: "Fortschritt tracken" },
+      ],
     };
-  }
+  },
 };
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
-/* ================= CONTAINER & LAYOUT ================= */
 
 .login-container {
   min-height: 100vh;
@@ -289,7 +296,7 @@ export default {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
 }
 
 .background-pattern {
@@ -302,16 +309,22 @@ export default {
 .grid-pattern {
   position: absolute;
   inset: 0;
-  background-image: 
-    linear-gradient(rgba(211, 47, 47, 0.03) 1px, transparent 1px),
+  background-image: linear-gradient(
+      rgba(211, 47, 47, 0.03) 1px,
+      transparent 1px
+    ),
     linear-gradient(90deg, rgba(211, 47, 47, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: gridMove 20s linear infinite;
 }
 
 @keyframes gridMove {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, 50px); }
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
 }
 
 .gradient-orb {
@@ -350,9 +363,16 @@ export default {
 }
 
 @keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.1); }
-  66% { transform: translate(-30px, 30px) scale(0.9); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
 }
 
 .content-wrapper {
@@ -366,8 +386,6 @@ export default {
   gap: 60px;
   align-items: center;
 }
-
-/* ================= BRANDING SECTION ================= */
 
 .branding-section {
   flex: 1;
@@ -419,16 +437,21 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    0 10px 40px rgba(211, 47, 47, 0.4),
-    0 0 0 20px rgba(211, 47, 47, 0.1),
-    inset 0 0 30px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4),
+    0 0 0 20px rgba(211, 47, 47, 0.1), inset 0 0 30px rgba(255, 255, 255, 0.1);
   animation: ringPulse 3s ease-in-out infinite;
 }
 
 @keyframes ringPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4); }
-  50% { transform: scale(1.05); box-shadow: 0 15px 50px rgba(211, 47, 47, 0.6); }
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 15px 50px rgba(211, 47, 47, 0.6);
+  }
 }
 
 .logo-inner-ring {
@@ -461,8 +484,12 @@ export default {
 }
 
 @keyframes titleGlow {
-  from { filter: drop-shadow(0 0 10px rgba(211, 47, 47, 0.3)); }
-  to { filter: drop-shadow(0 0 20px rgba(211, 47, 47, 0.6)); }
+  from {
+    filter: drop-shadow(0 0 10px rgba(211, 47, 47, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 0 20px rgba(211, 47, 47, 0.6));
+  }
 }
 
 .school-subtitle {
@@ -524,8 +551,6 @@ export default {
   font-weight: 500;
 }
 
-/* ================= FORM SECTION ================= */
-
 .form-section {
   flex: 1;
   display: flex;
@@ -549,9 +574,7 @@ export default {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
   border: 1px solid rgba(211, 47, 47, 0.1);
 }
@@ -578,8 +601,6 @@ export default {
   color: #666;
   font-weight: 400;
 }
-
-/* ================= FORM INPUTS ================= */
 
 .auth-form {
   display: flex;
@@ -638,7 +659,6 @@ export default {
   font-size: 22px !important;
 }
 
-/* Lehrer-Email Styling */
 .lehrer-email :deep(.q-field__control) {
   border-color: #388e3c !important;
   background: #f1f8f4;
@@ -652,8 +672,6 @@ export default {
   color: #388e3c;
 }
 
-/* ================= BUTTONS ================= */
-
 .submit-btn {
   height: 56px;
   border-radius: 12px;
@@ -662,8 +680,7 @@ export default {
   text-transform: none;
   letter-spacing: 0.3px;
   background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-  box-shadow: 
-    0 4px 14px rgba(211, 47, 47, 0.3),
+  box-shadow: 0 4px 14px rgba(211, 47, 47, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
   margin-top: 8px;
@@ -671,8 +688,7 @@ export default {
 
 .submit-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 6px 20px rgba(211, 47, 47, 0.4),
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -695,7 +711,7 @@ export default {
 
 .divider::before,
 .divider::after {
-  content: '';
+  content: "";
   flex: 1;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -721,8 +737,6 @@ export default {
   background: rgba(211, 47, 47, 0.05);
   color: #d32f2f;
 }
-
-/* ================= MESSAGES ================= */
 
 .message-box {
   display: flex;
@@ -762,8 +776,6 @@ export default {
   transform: translateY(10px);
 }
 
-/* ================= FOOTER ================= */
-
 .footer-text {
   text-align: center;
   font-size: 13px;
@@ -771,18 +783,16 @@ export default {
   font-weight: 400;
 }
 
-/* ================= RESPONSIVE ================= */
-
 @media (max-width: 1200px) {
   .content-wrapper {
     flex-direction: column;
     gap: 40px;
   }
-  
+
   .branding-section {
     width: 100%;
   }
-  
+
   .form-section {
     width: 100%;
     max-width: 500px;
@@ -793,36 +803,36 @@ export default {
   .content-wrapper {
     padding: 20px;
   }
-  
+
   .card-content {
     padding: 32px 24px !important;
   }
-  
+
   .school-title {
     font-size: 42px;
   }
-  
+
   .school-subtitle {
     font-size: 18px;
   }
-  
+
   .logo-outer-ring {
     width: 140px;
     height: 140px;
   }
-  
+
   .logo-icon {
     font-size: 60px !important;
   }
-  
+
   .feature-list {
     gap: 12px;
   }
-  
+
   .feature-item {
     padding: 12px 16px;
   }
-  
+
   .form-title {
     font-size: 26px;
   }
@@ -832,15 +842,15 @@ export default {
   .school-title {
     font-size: 32px;
   }
-  
+
   .school-subtitle {
     font-size: 16px;
   }
-  
+
   .card-content {
     padding: 24px 20px !important;
   }
-  
+
   .form-title {
     font-size: 24px;
   }

@@ -117,10 +117,8 @@
         </div>
       </header>
 
-      <!-- Main Area -->
       <main class="app-main">
         <div class="main-container">
-          <!-- First Class: Free Day -->
           <div v-if="isFirstClass" class="special-view free-day">
             <div class="special-content">
               <div class="special-icon celebration">
@@ -154,7 +152,6 @@
             </div>
           </div>
 
-          <!-- Fifth Class: Diploma -->
           <div v-else-if="isFifthClass" class="special-view diploma">
             <div class="special-content">
               <div class="special-icon diploma-icon">
@@ -205,9 +202,7 @@
             </div>
           </div>
 
-          <!-- Normal View: Other Classes -->
           <template v-else>
-            <!-- Tabs Navigation -->
             <section class="nav-tabs">
               <div class="tabs-wrapper">
                 <ul class="tabs-scroll" ref="tabsList">
@@ -235,7 +230,6 @@
               </div>
             </section>
 
-            <!-- Image Stage -->
             <section class="display-stage">
               <button class="nav-arrow prev" @click="prev">
                 <q-icon name="chevron_left" size="lg" />
@@ -269,7 +263,6 @@
               </button>
             </section>
 
-            <!-- Info Panel -->
             <section class="details-panel">
               <div class="panel-info">
                 <div class="info-heading">
@@ -353,7 +346,6 @@
               </div>
             </section>
 
-            <!-- Pagination Dots -->
             <section class="pagination">
               <ul class="dot-nav">
                 <li
@@ -779,9 +771,6 @@ export default {
   }
 }
 
-/* ============================================
-   POPUP MODAL
-   ============================================ */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -898,9 +887,6 @@ export default {
   box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
 }
 
-/* ============================================
-   LOADING SCREEN
-   ============================================ */
 .loader-screen {
   position: fixed;
   top: 0;
@@ -972,17 +958,11 @@ export default {
   }
 }
 
-/* ============================================
-   MAIN CONTENT
-   ============================================ */
 .main-content {
   position: relative;
   z-index: 1;
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
 .app-header {
   position: sticky;
   top: 0;
@@ -1151,9 +1131,6 @@ export default {
   font-size: 15px;
 }
 
-/* ============================================
-   MAIN AREA
-   ============================================ */
 .app-main {
   padding: 48px 40px;
 }
@@ -1163,9 +1140,6 @@ export default {
   margin: 0 auto;
 }
 
-/* ============================================
-   SPECIAL VIEWS (FREE DAY & DIPLOMA)
-   ============================================ */
 .special-view {
   display: flex;
   align-items: center;
@@ -1233,14 +1207,6 @@ export default {
   font-size: 120px;
   margin-bottom: 24px;
   display: inline-block;
-}
-
-.special-icon.celebration {
-  /* No animation */
-}
-
-.special-icon.diploma-icon {
-  /* No animation */
 }
 
 .special-content h2 {
@@ -1334,7 +1300,6 @@ export default {
   box-shadow: 0 12px 32px rgba(0, 245, 160, 0.5);
 }
 
-/* Diploma Specific */
 .diploma-details {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1441,9 +1406,6 @@ export default {
   line-height: 1.6;
 }
 
-/* ============================================
-   TABS NAVIGATION
-   ============================================ */
 .nav-tabs {
   margin-bottom: 40px;
 }
@@ -1499,10 +1461,6 @@ export default {
   transition: all 0.3s ease;
 }
 
-.tab-card.tab-active .tab-emoji {
-  /* No scale animation */
-}
-
 .tab-label {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
@@ -1538,9 +1496,6 @@ export default {
   }
 }
 
-/* ============================================
-   DISPLAY STAGE
-   ============================================ */
 .display-stage {
   display: flex;
   align-items: center;
@@ -1692,9 +1647,6 @@ export default {
   transform: scale(0.95);
 }
 
-/* ============================================
-   DETAILS PANEL
-   ============================================ */
 .details-panel {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1861,9 +1813,6 @@ export default {
   opacity: 1;
 }
 
-/* ============================================
-   TRANSITIONS
-   ============================================ */
 .fade-slide-enter-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1892,9 +1841,6 @@ export default {
   transform: translateX(-40px) scale(0.96);
 }
 
-/* ============================================
-   RESPONSIVE DESIGN
-   ============================================ */
 @media (max-width: 1200px) {
   .app-header-container {
     grid-template-columns: 1fr;

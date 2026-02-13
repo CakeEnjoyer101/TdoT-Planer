@@ -15,8 +15,10 @@ onMounted(async () => {
     const response = await axios.get("http://localhost:3000/auth/profile", {
       withCredentials: true,
     });
-    if (response.data.user.klasse !== 'Admin') {
-      alert("Zugriff verweigert: Nur Administratoren dürfen diese Seite aufrufen.");
+    if (response.data.user.klasse !== "Admin") {
+      alert(
+        "Zugriff verweigert: Nur Administratoren dürfen diese Seite aufrufen."
+      );
       window.location.href = "http://localhost:9000/main";
     }
   } catch (error) {
@@ -61,14 +63,12 @@ async function submit() {
 
 <template>
   <div class="admin-page">
-    <!-- Background -->
     <div class="bg-orbs">
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
       <div class="orb orb-3"></div>
     </div>
 
-    <!-- Header -->
     <header class="admin-header">
       <div class="header-content">
         <div class="header-icon">
@@ -81,11 +81,8 @@ async function submit() {
       </div>
     </header>
 
-    <!-- Main Content -->
     <main class="admin-main">
       <div class="admin-container">
-        
-        <!-- Create Task Card -->
         <div class="task-card">
           <div class="card-header">
             <q-icon name="add_task" />
@@ -99,7 +96,7 @@ async function submit() {
               outlined
               color="cyan"
               placeholder="Titel der Aufgabe eingeben"
-              :rules="[val => !!val || 'Titel ist erforderlich']"
+              :rules="[(val) => !!val || 'Titel ist erforderlich']"
               class="form-input"
             />
 
@@ -122,7 +119,7 @@ async function submit() {
                 color="cyan"
                 placeholder="YYYY-MM-DD"
                 hint="Format: YYYY-MM-DD"
-                :rules="[val => !!val || 'Datum ist erforderlich']"
+                :rules="[(val) => !!val || 'Datum ist erforderlich']"
                 class="form-input"
               />
 
@@ -150,7 +147,6 @@ async function submit() {
           </q-form>
         </div>
 
-        <!-- Info Cards -->
         <div class="info-cards">
           <div class="info-card">
             <div class="info-icon">
@@ -158,7 +154,10 @@ async function submit() {
             </div>
             <div class="info-content">
               <h3>Tag IDs</h3>
-              <p>1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag, 6=Samstag, 7=Sonntag</p>
+              <p>
+                1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag,
+                6=Samstag, 7=Sonntag
+              </p>
             </div>
           </div>
 
@@ -168,24 +167,31 @@ async function submit() {
             </div>
             <div class="info-content">
               <h3>Zugriffsberechtigung</h3>
-              <p>Nur Administratoren können Aufgaben erstellen und verwalten.</p>
+              <p>
+                Nur Administratoren können Aufgaben erstellen und verwalten.
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- Back Button -->
-        <button class="back-btn" @click="window.location.href = 'http://localhost:9000/main'">
+        <button
+          class="back-btn"
+          @click="window.location.href = 'http://localhost:9000/main'"
+        >
           <q-icon name="arrow_back" />
           <span>Zurück zur Hauptseite</span>
         </button>
-
       </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 .admin-page {
   min-height: 100vh;
@@ -194,117 +200,298 @@ async function submit() {
   overflow-x: hidden;
 }
 
-/* Background Orbs */
-.bg-orbs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; }
-.orb-1 { width: 600px; height: 600px; background: linear-gradient(135deg, #ff6b35, #ff8c42); top: -200px; right: -200px; }
-.orb-2 { width: 500px; height: 500px; background: linear-gradient(135deg, #00d4ff, #0099ff); bottom: -150px; left: -150px; }
-.orb-3 { width: 400px; height: 400px; background: linear-gradient(135deg, #00f5a0, #00d4aa); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.bg-orbs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+}
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  top: -200px;
+  right: -200px;
+}
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  bottom: -150px;
+  left: -150px;
+}
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
-/* Header */
 .admin-header {
-  position: relative; z-index: 10;
+  position: relative;
+  z-index: 10;
   background: rgba(10, 14, 39, 0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 24px 40px;
 }
-.header-content { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 20px; }
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
 .header-icon {
-  width: 64px; height: 64px;
+  width: 64px;
+  height: 64px;
   background: linear-gradient(135deg, #ff6b35, #ff8c42);
-  border-radius: 16px; display: flex; align-items: center; justify-content: center;
-  font-size: 36px; color: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #ffffff;
   box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
 }
 .header-content h1 {
-  font-size: 32px; font-weight: 800; margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
   background: linear-gradient(135deg, #ff6b35, #ff8c42);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-.header-content p { font-size: 14px; color: rgba(255, 255, 255, 0.6); margin: 4px 0 0; }
+.header-content p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 4px 0 0;
+}
 
-/* Main Content */
-.admin-main { position: relative; z-index: 1; padding: 48px 40px; }
-.admin-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.admin-main {
+  position: relative;
+  z-index: 1;
+  padding: 48px 40px;
+}
+.admin-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
-/* Task Card */
 .task-card {
-  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px; padding: 36px; backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 36px;
+  backdrop-filter: blur(10px);
 }
 .card-header {
-  display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
-  padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.card-header .q-icon { font-size: 32px; color: #00d4ff; }
-.card-header h2 { font-size: 24px; font-weight: 700; color: #ffffff; margin: 0; }
+.card-header .q-icon {
+  font-size: 32px;
+  color: #00d4ff;
+}
+.card-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
 
-/* Form */
-.task-form { display: flex; flex-direction: column; gap: 20px; }
-.form-input { width: 100%; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.form-input {
+  width: 100%;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 .submit-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 16px 32px; background: linear-gradient(135deg, #00d4ff, #0099ff);
-  color: #ffffff; border: none; border-radius: 12px;
-  font-size: 16px; font-weight: 700; cursor: pointer;
-  transition: all 0.3s ease; box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
   margin-top: 8px;
 }
-.submit-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5); }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.form-note { text-align: center; font-size: 13px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
+}
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.form-note {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
 
-/* Info Cards */
-.info-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.info-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 .info-card {
-  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px; padding: 24px; display: flex; gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
 }
 .info-icon {
-  width: 48px; height: 48px; background: linear-gradient(135deg, #00d4ff, #0099ff);
-  border-radius: 12px; display: flex; align-items: center; justify-content: center;
-  font-size: 24px; color: #ffffff; flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #ffffff;
+  flex-shrink: 0;
 }
-.info-icon.security { background: linear-gradient(135deg, #00f5a0, #00d4aa); }
-.info-content h3 { font-size: 16px; font-weight: 700; color: #ffffff; margin: 0 0 8px; }
-.info-content p { font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6; margin: 0; }
+.info-icon.security {
+  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+}
+.info-content h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px;
+}
+.info-content p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.6;
+  margin: 0;
+}
 
-/* Back Button */
 .back-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 14px 28px; background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
-  color: #ffffff; font-size: 15px; font-weight: 600; cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
-.back-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
 
-/* Quasar Customization */
-:deep(.q-field--outlined .q-field__control) { background: rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.1); color: #ffffff; }
-:deep(.q-field--outlined.q-field--focused .q-field__control) { border-color: #00d4ff !important; box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.3); }
-:deep(.q-field__label) { color: rgba(255, 255, 255, 0.7); }
-:deep(.q-field--focused .q-field__label) { color: #00d4ff !important; }
-:deep(.q-field__native) { color: #ffffff; }
-:deep(.q-field__bottom) { color: rgba(255, 255, 255, 0.5); }
-:deep(.q-placeholder) { color: rgba(255, 255, 255, 0.3); }
+:deep(.q-field--outlined .q-field__control) {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+:deep(.q-field--outlined.q-field--focused .q-field__control) {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.3);
+}
+:deep(.q-field__label) {
+  color: rgba(255, 255, 255, 0.7);
+}
+:deep(.q-field--focused .q-field__label) {
+  color: #00d4ff !important;
+}
+:deep(.q-field__native) {
+  color: #ffffff;
+}
+:deep(.q-field__bottom) {
+  color: rgba(255, 255, 255, 0.5);
+}
+:deep(.q-placeholder) {
+  color: rgba(255, 255, 255, 0.3);
+}
 
-/* Responsive */
 @media (max-width: 768px) {
-  .admin-header { padding: 20px; }
-  .header-icon { width: 52px; height: 52px; font-size: 28px; }
-  .header-content h1 { font-size: 24px; }
-  .admin-main { padding: 32px 20px; }
-  .task-card { padding: 24px; }
-  .card-header h2 { font-size: 20px; }
-  .form-row { grid-template-columns: 1fr; }
-  .info-cards { grid-template-columns: 1fr; }
+  .admin-header {
+    padding: 20px;
+  }
+  .header-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 28px;
+  }
+  .header-content h1 {
+    font-size: 24px;
+  }
+  .admin-main {
+    padding: 32px 20px;
+  }
+  .task-card {
+    padding: 24px;
+  }
+  .card-header h2 {
+    font-size: 20px;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  .info-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
-  .header-content { flex-direction: column; text-align: center; }
-  .task-card { padding: 20px; }
-  .submit-btn { padding: 14px 24px; font-size: 15px; }
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .task-card {
+    padding: 20px;
+  }
+  .submit-btn {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
 }
 </style>
