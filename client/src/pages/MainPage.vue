@@ -1,13 +1,11 @@
 <template>
   <div class="main-app">
-    <!-- Animated Background -->
     <div class="bg-pattern">
       <div class="bg-orb orb-1"></div>
       <div class="bg-orb orb-2"></div>
       <div class="bg-orb orb-3"></div>
     </div>
 
-    <!-- Klasse Popup -->
     <div v-if="showKlassePopup && currentUser" class="popup-overlay">
       <div class="popup-modal">
         <div class="popup-top">
@@ -67,9 +65,7 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div v-else class="main-content">
-      <!-- Header -->
       <header class="app-header">
         <div class="app-header-container">
           <div class="header-actions-left">

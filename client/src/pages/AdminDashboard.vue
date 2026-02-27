@@ -452,6 +452,7 @@ async function submit() {
   color: rgba(255, 255, 255, 0.3);
 }
 
+
 @media (max-width: 768px) {
   .admin-header {
     padding: 20px;
