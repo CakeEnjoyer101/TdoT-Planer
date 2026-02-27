@@ -1,5 +1,5 @@
-import { query } from '../../boilerplate/db/index.js';
 import bcrypt from 'bcrypt';
+import { query } from '../../boilerplate/db/index.js';
 
 export const findUserByEmail = async (email) => {
   const result = await query('SELECT * FROM user_account WHERE email = $1', [email]);
@@ -34,7 +34,7 @@ export const createLehrer = async (name, fachbereich = 'Allgemein') => {
 
 export const verifyPassword = async (plainPassword, hashedPassword) => {
   if (!hashedPassword) return false;
-  return await bcrypt.compare(plainPassword, hashedPassword);
+  return bcrypt.compare(plainPassword, hashedPassword);
 };
 
 export const isAdmin = async (userid) => {
@@ -65,7 +65,12 @@ export const createAufgabe = async (data) => {
 };
 
 export const getAufgaben = async () => {
-  const result = await query('SELECT * FROM aufgabe ORDER BY datum ASC');
+  const result = await query(
+    `SELECT a.*, l.name AS lehrer_name
+     FROM aufgabe a
+     LEFT JOIN lehrer l ON a.lehrerid = l.lehrerid
+     ORDER BY a.datum ASC, a.uhrzeit ASC, a.aufgabeid ASC`,
+  );
   return result.rows;
 };
 
@@ -89,7 +94,9 @@ export const schuelerFuerAufgabeAnmelden = async (schuelerUserid, aufgabeid) => 
   }
 
   const result = await query(
-    'INSERT INTO schueler_aufgabe_anmeldung (schueler_userid, aufgabeid) VALUES ($1, $2) RETURNING *',
+    `INSERT INTO schueler_aufgabe_anmeldung (schueler_userid, aufgabeid, status)
+     VALUES ($1, $2, 'angemeldet')
+     RETURNING *`,
     [schuelerUserid, aufgabeid],
   );
   return result.rows[0];
@@ -110,13 +117,14 @@ export const getAngemeldeteSchuelerFuerAufgabe = async (aufgabeid) => {
        sa.anmeldung_id,
        sa.schueler_userid,
        sa.angemeldet_am,
-       sa.status,
+       COALESCE(sa.status, 'angemeldet') AS status,
        u.name,
        u.email,
        u.klasse
      FROM schueler_aufgabe_anmeldung sa
      JOIN user_account u ON sa.schueler_userid = u.userid
      WHERE sa.aufgabeid = $1
+       AND COALESCE(sa.status, 'angemeldet') <> 'abgelehnt'
      ORDER BY sa.angemeldet_am ASC`,
     [aufgabeid],
   );
@@ -136,10 +144,10 @@ export const getUebernommeneAufgabenFuerLehrer = async (lehrerUserid) => {
   return result.rows;
 };
 
-export const updateSchuelerAnmeldungStatus = async (anmeldung_id, status) => {
+export const updateSchuelerAnmeldungStatus = async (anmeldungId, status) => {
   const result = await query(
     'UPDATE schueler_aufgabe_anmeldung SET status = $1 WHERE anmeldung_id = $2 RETURNING *',
-    [status, anmeldung_id],
+    [status, anmeldungId],
   );
   return result.rows[0];
 };
@@ -148,12 +156,15 @@ export const getAngemeldeteAufgabenFuerSchueler = async (schuelerUserid) => {
   const result = await query(
     `SELECT
        a.*,
+       l.name AS lehrer_name,
        sa.angemeldet_am,
-       sa.status,
+       COALESCE(sa.status, 'angemeldet') AS status,
        sa.anmeldung_id
      FROM aufgabe a
      JOIN schueler_aufgabe_anmeldung sa ON a.aufgabeid = sa.aufgabeid
+     LEFT JOIN lehrer l ON a.lehrerid = l.lehrerid
      WHERE sa.schueler_userid = $1
+       AND COALESCE(sa.status, 'angemeldet') <> 'abgelehnt'
      ORDER BY a.datum, a.uhrzeit`,
     [schuelerUserid],
   );
@@ -180,6 +191,59 @@ export const getAktuelleAufgabeFuerLehrer = async (lehrerid) => {
   return result.rows[0] || null;
 };
 
+export const getAlleLehrerAccounts = async () => {
+  const result = await query(
+    `SELECT
+       u.userid,
+       u.name,
+       u.email,
+       u.klasse,
+       l.lehrerid,
+       l.fachbereich
+     FROM user_account u
+     JOIN lehrer l ON u.lehrerid = l.lehrerid
+     WHERE u.klasse = 'Lehrer'
+     ORDER BY u.name ASC`,
+  );
+
+  return result.rows;
+};
+
+export const findLehrerById = async (lehrerid) => {
+  const result = await query('SELECT lehrerid FROM lehrer WHERE lehrerid = $1', [lehrerid]);
+  return result.rows[0] || null;
+};
+
+export const assignLehrerZuAufgabe = async (aufgabeid, lehrerid) => {
+  const result = await query('UPDATE aufgabe SET lehrerid = $1 WHERE aufgabeid = $2 RETURNING *', [
+    lehrerid,
+    aufgabeid,
+  ]);
+  return result.rows[0] || null;
+};
+
+export const istLehrerFuerAufgabeZustaendig = async (lehrerid, aufgabeid) => {
+  const result = await query('SELECT 1 FROM aufgabe WHERE aufgabeid = $1 AND lehrerid = $2', [
+    aufgabeid,
+    lehrerid,
+  ]);
+  return result.rows.length > 0;
+};
+
+export const removeSchuelerAnmeldungFuerLehrer = async (anmeldungId, lehrerid) => {
+  const result = await query(
+    `DELETE FROM schueler_aufgabe_anmeldung sa
+     USING aufgabe a
+     WHERE sa.anmeldung_id = $1
+       AND sa.aufgabeid = a.aufgabeid
+       AND a.lehrerid = $2
+     RETURNING sa.*`,
+    [anmeldungId, lehrerid],
+  );
+
+  return result.rows[0] || null;
+};
+
 // 👑 ADMIN: alle Aufgaben inkl. zugewiesenem Lehrer
 export const getAlleAufgabenMitLehrer = async () => {
   const result = await query(
@@ -195,50 +259,8 @@ export const getAlleAufgabenMitLehrer = async () => {
     FROM aufgabe a
     LEFT JOIN lehrer l ON a.lehrerid = l.lehrerid
     ORDER BY a.datum, a.uhrzeit
-    `
+    `,
   );
 
   return result.rows;
-};
-
-import crypto from 'crypto';
-
-// Token setzen
-export const setEmailVerificationToken = async (userid) => {
-  const token = crypto.randomBytes(32).toString('hex');
-
-  await query(
-    `UPDATE user_account
-     SET email_token = $1,
-         email_token_expires = NOW() + INTERVAL '24 hours'
-     WHERE userid = $2`,
-    [token, userid]
-  );
-
-  return token;
-};
-
-// Token prüfen
-export const verifyEmailByToken = async (token) => {
-  const result = await query(
-    `SELECT * FROM user_account
-     WHERE email_token = $1
-       AND email_token_expires > NOW()`,
-    [token]
-  );
-
-  if (result.rows.length === 0) return null;
-
-  const user = result.rows[0];
-
-  await query(
-    `UPDATE user_account
-     SET email_verified = true,
-         email_token = NULL,
-         email_token_expires = NULL
-     WHERE userid = $1`,
-    [user.userid]
-  );
-
-  return user;
 };

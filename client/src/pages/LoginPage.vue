@@ -23,17 +23,6 @@ const isEmailValid = computed(() => {
   );
 });
 
-
-
-
-
-
-
-
-
-
-
-
 const isLehrerEmail = computed(() => {
   if (!isRegister.value || !email.value) return false;
   return /^[a-z]+\.[a-z]+@htlwienwest\.at$/.test(email.value.toLowerCase());
@@ -66,8 +55,7 @@ async function handleSubmit() {
         { withCredentials: true }
       );
 
-      success.value =
-        "Registrierung erfolgreich! Bitte prüfe dein E-Mail-Postfach und bestätige deinen Account.";
+      success.value = "Registrierung erfolgreich! Du kannst dich jetzt anmelden.";
       isRegister.value = false;
 
       password.value = "";

@@ -1,32 +1,83 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 
 const titel = ref("");
 const beschreibung = ref("");
 const datum = ref("");
 const uhrzeit = ref("");
-const tagid = ref(1);
 const lehrerid = ref(null);
-const leiterid = ref(1);
+
+const lehrerAccounts = ref([]);
+const aufgaben = ref([]);
+const zuweisungen = ref({});
+
+const lehrerOptions = computed(() => [
+  { label: "Kein Lehrer zugewiesen", value: null },
+  ...lehrerAccounts.value.map((lehrer) => ({
+    label: `${lehrer.name} (${lehrer.email})`,
+    value: lehrer.lehrerid,
+  })),
+]);
+
+const aufgabeOptions = computed(() => [
+  { label: "Keine Aufgabe", value: null },
+  ...aufgaben.value.map((aufgabe) => ({
+    label: `${aufgabe.titel} (${formatDate(aufgabe.datum)}${
+      aufgabe.uhrzeit ? `, ${formatTime(aufgabe.uhrzeit)} Uhr` : ""
+    })`,
+    value: aufgabe.aufgabeid,
+  })),
+]);
+
 
 onMounted(async () => {
   try {
     const response = await axios.get("http://localhost:3000/auth/profile", {
       withCredentials: true,
     });
+
     if (response.data.user.klasse !== "Admin") {
-      alert(
-        "Zugriff verweigert: Nur Administratoren dürfen diese Seite aufrufen."
-      );
+      alert("Zugriff verweigert: Nur Administratoren duerfen diese Seite aufrufen.");
       window.location.href = "http://localhost:9000/main";
+      return;
     }
+
+    await Promise.all([loadLehrerAccounts(), loadAufgaben()]);
+    syncLehrerZuweisungen();
   } catch (error) {
-    console.error("Fehler beim Überprüfen der Admin-Berechtigung:", error);
+    console.error("Fehler beim Ueberpruefen der Admin-Berechtigung:", error);
     alert("Fehler bei der Authentifizierung. Bitte erneut einloggen.");
     window.location.href = "http://localhost:9000/";
   }
 });
+
+async function loadLehrerAccounts() {
+  const response = await axios.get("http://localhost:3000/admin/lehrer", {
+    withCredentials: true,
+  });
+  lehrerAccounts.value = Array.isArray(response.data) ? response.data : [];
+}
+
+async function loadAufgaben() {
+  const response = await axios.get("http://localhost:3000/aufgaben", {
+    withCredentials: true,
+  });
+  aufgaben.value = Array.isArray(response.data) ? response.data : [];
+}
+
+function syncLehrerZuweisungen() {
+  const mapping = {};
+
+  for (const lehrer of lehrerAccounts.value) {
+    const ersteAufgabe = aufgaben.value.find(
+      (aufgabe) => aufgabe.lehrerid === lehrer.lehrerid
+    );
+    mapping[lehrer.lehrerid] = ersteAufgabe ? ersteAufgabe.aufgabeid : null;
+  }
+
+  zuweisungen.value = mapping;
+}
 
 async function submit() {
   try {
@@ -35,30 +86,77 @@ async function submit() {
       beschreibung: beschreibung.value,
       datum: datum.value,
       uhrzeit: uhrzeit.value,
-      tagid: tagid.value,
       lehrerid: lehrerid.value,
-      leiterid: leiterid.value,
     };
+
     await axios.post("http://localhost:3000/aufgaben", payload, {
       withCredentials: true,
     });
-    alert("Aufgabe erfolgreich erstellt!");
+
+    alert("Aufgabe erfolgreich erstellt.");
+
     titel.value = "";
     beschreibung.value = "";
     datum.value = "";
     uhrzeit.value = "";
-    tagid.value = 1;
     lehrerid.value = null;
-    leiterid.value = 1;
+
+    await loadAufgaben();
+    syncLehrerZuweisungen();
   } catch (err) {
     if (err.response?.status === 403) {
-      alert("Fehler: Keine Admin-Berechtigung für diese Aktion");
+      alert("Fehler: Keine Admin-Berechtigung fuer diese Aktion");
       window.location.href = "http://localhost:9000/main";
     } else {
       alert("Fehler: " + (err.response?.data?.error || err.message));
     }
   }
 }
+
+async function lehrerAufgabeSpeichern(lehrerId) {
+  const zielAufgabeId = zuweisungen.value[lehrerId] ?? null;
+
+  try {
+    const bisherigeAufgaben = aufgaben.value
+      .filter((aufgabe) => aufgabe.lehrerid === lehrerId)
+      .map((aufgabe) => aufgabe.aufgabeid);
+
+    for (const aufgabeId of bisherigeAufgaben) {
+      if (aufgabeId !== zielAufgabeId) {
+        await axios.patch(
+          `http://localhost:3000/admin/aufgaben/${aufgabeId}/lehrer`,
+          { lehrerid: null },
+          { withCredentials: true }
+        );
+      }
+    }
+
+    if (zielAufgabeId !== null) {
+      await axios.patch(
+        `http://localhost:3000/admin/aufgaben/${zielAufgabeId}/lehrer`,
+        { lehrerid: lehrerId },
+        { withCredentials: true }
+      );
+    }
+
+    await loadAufgaben();
+    syncLehrerZuweisungen();
+  } catch (err) {
+    alert("Fehler: " + (err.response?.data?.error || err.message));
+    await loadAufgaben();
+    syncLehrerZuweisungen();
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("de-DE");
+};
+
+const formatTime = (timeString) => {
+  if (!timeString) return "";
+  return String(timeString).substring(0, 5);
+};
 </script>
 
 <template>
@@ -76,110 +174,135 @@ async function submit() {
         </div>
         <div>
           <h1>Admin Dashboard</h1>
-          <p>Aufgabenverwaltung & Systemkontrolle</p>
+          <p>Aufgabenverwaltung und Lehrer-Zuweisung</p>
         </div>
       </div>
     </header>
 
     <main class="admin-main">
       <div class="admin-container">
-        <div class="task-card">
-          <div class="card-header">
-            <q-icon name="add_task" />
-            <h2>Neue Aufgabe erstellen</h2>
-          </div>
-
-          <q-form @submit.prevent="submit" class="task-form">
-            <q-input
-              v-model="titel"
-              label="Titel *"
-              outlined
-              color="cyan"
-              placeholder="Titel der Aufgabe eingeben"
-              :rules="[(val) => !!val || 'Titel ist erforderlich']"
-              class="form-input"
-            />
-
-            <q-input
-              v-model="beschreibung"
-              label="Beschreibung"
-              type="textarea"
-              outlined
-              color="cyan"
-              placeholder="Beschreibung der Aufgabe (optional)"
-              rows="3"
-              class="form-input"
-            />
-
-            <div class="form-row">
-              <q-input
-                v-model="datum"
-                label="Datum *"
-                outlined
-                color="cyan"
-                placeholder="YYYY-MM-DD"
-                hint="Format: YYYY-MM-DD"
-                :rules="[(val) => !!val || 'Datum ist erforderlich']"
-                class="form-input"
-              />
-
-              <q-input
-                v-model="uhrzeit"
-                label="Uhrzeit"
-                outlined
-                color="cyan"
-                placeholder="HH:MM:SS"
-                hint="Format: HH:MM:SS"
-                class="form-input"
-              />
-            </div>
-
-            <button
-              type="submit"
-              class="submit-btn"
-              :disabled="!titel || !datum"
-            >
+        <div class="admin-grid">
+          <div class="task-card">
+            <div class="card-header">
               <q-icon name="add_task" />
-              <span>Aufgabe erstellen</span>
-            </button>
-
-            <p class="form-note">* Pflichtfelder</p>
-          </q-form>
-        </div>
-
-        <div class="info-cards">
-          <div class="info-card">
-            <div class="info-icon">
-              <q-icon name="info" />
+              <h2>Neue Aufgabe erstellen</h2>
             </div>
-            <div class="info-content">
-              <h3>Tag IDs</h3>
-              <p>
-                1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag,
-                6=Samstag, 7=Sonntag
-              </p>
-            </div>
+
+            <q-form @submit.prevent="submit" class="task-form">
+              <q-input
+                v-model="titel"
+                label="Titel *"
+                outlined
+                color="cyan"
+                placeholder="Titel der Aufgabe eingeben"
+                :rules="[(val) => !!val || 'Titel ist erforderlich']"
+                class="form-input"
+              />
+
+              <q-input
+                v-model="beschreibung"
+                label="Beschreibung"
+                type="textarea"
+                outlined
+                color="cyan"
+                placeholder="Beschreibung der Aufgabe (optional)"
+                rows="3"
+                class="form-input"
+              />
+
+              <div class="form-row">
+                <q-input
+                  v-model="datum"
+                  label="Datum *"
+                  outlined
+                  color="cyan"
+                  placeholder="YYYY-MM-DD"
+                  hint="Format: YYYY-MM-DD"
+                  :rules="[(val) => !!val || 'Datum ist erforderlich']"
+                  class="form-input"
+                />
+
+                <q-input
+                  v-model="uhrzeit"
+                  label="Uhrzeit"
+                  outlined
+                  color="cyan"
+                  placeholder="HH:MM:SS"
+                  hint="Format: HH:MM:SS"
+                  class="form-input"
+                />
+              </div>
+
+              <q-select
+                v-model="lehrerid"
+                :options="lehrerOptions"
+                emit-value
+                map-options
+                outlined
+                color="cyan"
+                label="Lehrer (optional)"
+                class="form-input"
+              />
+
+              <button
+                type="submit"
+                class="submit-btn"
+                :disabled="!titel || !datum"
+              >
+                <q-icon name="add_task" />
+                <span>Aufgabe erstellen</span>
+              </button>
+
+              <p class="form-note">* Pflichtfelder</p>
+            </q-form>
           </div>
 
-          <div class="info-card">
-            <div class="info-icon security">
-              <q-icon name="security" />
+          <div class="task-card teacher-card">
+            <div class="card-header">
+              <q-icon name="school" />
+              <h2>Lehrer-Accounts</h2>
             </div>
-            <div class="info-content">
-              <h3>Zugriffsberechtigung</h3>
-              <p>
-                Nur Administratoren können Aufgaben erstellen und verwalten.
-              </p>
+
+
+            <div v-if="lehrerAccounts.length === 0" class="empty-state">
+              Keine Lehrer-Accounts gefunden.
+            </div>
+
+            <div v-else class="teacher-list">
+              <div
+                v-for="lehrer in lehrerAccounts"
+                :key="lehrer.userid"
+                class="teacher-item"
+              >
+                <div class="teacher-info">
+                  <h3>{{ lehrer.name }}</h3>
+                  <p>{{ lehrer.email }}</p>
+                </div>
+                <div class="teacher-actions">
+                  <span class="teacher-meta">{{
+                    lehrer.fachbereich || "Allgemein"
+                  }}</span>
+                  <q-select
+                    v-model="zuweisungen[lehrer.lehrerid]"
+                    :options="aufgabeOptions"
+                    emit-value
+                    map-options
+                    outlined
+                    color="cyan"
+                    dense
+                    label="Aufgabe wählen"
+                    class="teacher-task-select"
+                    @update:model-value="lehrerAufgabeSpeichern(lehrer.lehrerid)"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <button
-          class="back-btn"
-          @click="window.location.href = 'http://localhost:9000/main'"
-        >
+        <button class="back-btn" @click="window.location.href = 'http://localhost:9000/main'">
           <q-icon name="arrow_back" />
-          <span>Zurück zur Hauptseite</span>
+          <span>Zurueck zur Hauptseite</span>
         </button>
       </div>
     </main>
@@ -209,12 +332,14 @@ async function submit() {
   z-index: 0;
   pointer-events: none;
 }
+
 .orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.15;
 }
+
 .orb-1 {
   width: 600px;
   height: 600px;
@@ -222,6 +347,7 @@ async function submit() {
   top: -200px;
   right: -200px;
 }
+
 .orb-2 {
   width: 500px;
   height: 500px;
@@ -229,6 +355,7 @@ async function submit() {
   bottom: -150px;
   left: -150px;
 }
+
 .orb-3 {
   width: 400px;
   height: 400px;
@@ -246,6 +373,7 @@ async function submit() {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 24px 40px;
 }
+
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
@@ -253,6 +381,7 @@ async function submit() {
   align-items: center;
   gap: 20px;
 }
+
 .header-icon {
   width: 64px;
   height: 64px;
@@ -265,6 +394,7 @@ async function submit() {
   color: #ffffff;
   box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
 }
+
 .header-content h1 {
   font-size: 32px;
   font-weight: 800;
@@ -274,6 +404,7 @@ async function submit() {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
 .header-content p {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
@@ -285,38 +416,48 @@ async function submit() {
   z-index: 1;
   padding: 48px 40px;
 }
+
 .admin-container {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
 .task-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-  padding: 36px;
+  padding: 32px;
   backdrop-filter: blur(10px);
 }
+
 .card-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .card-header .q-icon {
-  font-size: 32px;
+  font-size: 30px;
   color: #00d4ff;
 }
+
 .card-header h2 {
   font-size: 24px;
   font-weight: 700;
   color: #ffffff;
-  margin: 0;
 }
 
 .task-form {
@@ -324,90 +465,132 @@ async function submit() {
   flex-direction: column;
   gap: 20px;
 }
-.form-input {
-  width: 100%;
-}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
+
+.form-input {
+  width: 100%;
+}
+
 .submit-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 16px 32px;
+  padding: 14px 26px;
   background: linear-gradient(135deg, #00d4ff, #0099ff);
   color: #ffffff;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
-  margin-top: 8px;
 }
+
 .submit-btn:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 212, 255, 0.45);
 }
+
 .submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
+
 .form-note {
   text-align: center;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.info-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-.info-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  gap: 16px;
-}
-.info-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+.empty-state {
+  padding: 20px;
   border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+.teacher-card {
+  min-height: 100%;
+}
+
+.teacher-list {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.teacher-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.teacher-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.45);
+  border-radius: 999px;
+}
+
+.teacher-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.teacher-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  color: #ffffff;
-  flex-shrink: 0;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-.info-icon.security {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+
+.teacher-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: 300px;
 }
-.info-content h3 {
-  font-size: 16px;
+
+.teacher-info h3 {
+  color: #ffffff !important;
+  font-size: 17px;
+  margin-bottom: 4px;
   font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 8px;
 }
-.info-content p {
+
+.teacher-info p {
+  color: rgba(255, 255, 255, 0.8) !important;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.6;
-  margin: 0;
+}
+
+.teacher-meta {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 245, 160, 0.2);
+  color: #00f5a0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.teacher-task-select {
+  width: 100%;
 }
 
 .back-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -421,78 +604,72 @@ async function submit() {
   cursor: pointer;
   transition: all 0.3s ease;
 }
+
 .back-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
 :deep(.q-field--outlined .q-field__control) {
   background: rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-}
-:deep(.q-field--outlined.q-field--focused .q-field__control) {
-  border-color: #00d4ff !important;
-  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.3);
-}
-:deep(.q-field__label) {
-  color: rgba(255, 255, 255, 0.7);
-}
-:deep(.q-field--focused .q-field__label) {
-  color: #00d4ff !important;
-}
-:deep(.q-field__native) {
-  color: #ffffff;
-}
-:deep(.q-field__bottom) {
-  color: rgba(255, 255, 255, 0.5);
-}
-:deep(.q-placeholder) {
-  color: rgba(255, 255, 255, 0.3);
 }
 
+:deep(.q-field__label),
+:deep(.q-field__input),
+:deep(.q-field__native),
+:deep(.q-field__input span),
+:deep(.q-field__marginal),
+:deep(.q-select__dropdown-icon) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.q-menu) {
+  background: #101938;
+  color: #ffffff;
+}
+
+:deep(.q-menu .q-item),
+:deep(.q-menu .q-item__label) {
+  color: #ffffff !important;
+}
+
+@media (max-width: 960px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+}
 
 @media (max-width: 768px) {
   .admin-header {
     padding: 20px;
   }
-  .header-icon {
-    width: 52px;
-    height: 52px;
-    font-size: 28px;
-  }
-  .header-content h1 {
-    font-size: 24px;
-  }
+
   .admin-main {
     padding: 32px 20px;
   }
-  .task-card {
-    padding: 24px;
-  }
-  .card-header h2 {
-    font-size: 20px;
-  }
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  .info-cards {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 480px) {
+  .task-card {
+    padding: 20px;
+  }
+
   .header-content {
     flex-direction: column;
     text-align: center;
   }
-  .task-card {
-    padding: 20px;
-  }
-  .submit-btn {
-    padding: 14px 24px;
-    font-size: 15px;
+
+  .card-header h2 {
+    font-size: 20px;
   }
 }
 </style>

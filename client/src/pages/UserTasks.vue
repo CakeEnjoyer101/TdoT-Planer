@@ -11,7 +11,7 @@
         <div class="header-actions">
           <button class="nav-btn" @click="goBack">
             <q-icon name="arrow_back" />
-            <span>Zurück</span>
+            <span>Zurueck</span>
           </button>
           <button class="nav-btn logout" @click="logout">
             <q-icon name="logout" />
@@ -21,7 +21,7 @@
 
         <div class="header-title">
           <h1>Meine Aufgaben</h1>
-          <p>Übersicht deiner angemeldeten Aufgaben</p>
+          <p>Uebersicht deiner angemeldeten Aufgaben</p>
         </div>
 
         <div class="header-user" v-if="user">
@@ -67,7 +67,7 @@
                 <q-icon name="inbox" />
               </div>
               <h3>Keine Aufgaben vorhanden</h3>
-              <p>Du bist derzeit für keine Aufgaben angemeldet.</p>
+              <p>Du bist derzeit fuer keine Aufgaben angemeldet.</p>
               <button class="cta-button" @click="goBack">
                 <q-icon name="add" />
                 Aufgaben entdecken
@@ -117,7 +117,7 @@
             <div class="title-icon teacher">
               <q-icon name="school" />
             </div>
-            <h2>Übernommene Aufgabe</h2>
+            <h2>Betreute Aufgaben</h2>
           </div>
 
           <div v-if="tasks.length === 0" class="empty-container">
@@ -125,12 +125,8 @@
               <div class="empty-illustration teacher">
                 <q-icon name="assignment_turned_in" />
               </div>
-              <h3>Keine Aufgabe übernommen</h3>
-              <p>Sie haben derzeit keine Aufgabe übernommen.</p>
-              <button class="cta-button" @click="goBack">
-                <q-icon name="arrow_back" />
-                Zur Übersicht
-              </button>
+              <h3>Keine Aufgabe zugewiesen</h3>
+              <p>Sie haben derzeit keine Aufgabe zugewiesen.</p>
             </div>
           </div>
 
@@ -162,37 +158,34 @@
                     <q-icon name="refresh" />
                     <span>Aktualisieren</span>
                   </button>
-                  <button class="icon-btn danger" @click="lehrerAbmelden">
-                    <q-icon name="logout" />
-                    <span>Abmelden</span>
-                  </button>
                 </div>
               </div>
 
               <div class="students-management">
                 <div
-                  class="student-group"
-                  v-if="getAllSchuelerForTask(task.aufgabeid).length > 0"
+                  v-if="getSchuelerForTask(task.aufgabeid).length === 0"
+                  class="no-data"
                 >
+                  <q-icon name="group_off" />
+                  <p>Noch keine Schueler angemeldet</p>
+                </div>
+
+                <div v-else class="student-group">
                   <div class="group-header">
                     <h4>
                       <q-icon name="people" />
-                      Angemeldete Schüler
+                      Angemeldete Schueler
                       <span class="counter">{{
-                        getAllSchuelerForTask(task.aufgabeid).length
+                        getSchuelerForTask(task.aufgabeid).length
                       }}</span>
                     </h4>
                   </div>
 
                   <div class="student-grid">
                     <div
-                      v-for="schueler in getAllSchuelerForTask(task.aufgabeid)"
+                      v-for="schueler in getSchuelerForTask(task.aufgabeid)"
                       :key="schueler.anmeldung_id"
                       class="student-box"
-                      :class="{
-                        'is-rejected': schueler.status === 'abgelehnt',
-                        'is-confirmed': schueler.status === 'bestätigt',
-                      }"
                     >
                       <div class="student-profile">
                         <div class="profile-avatar">
@@ -200,12 +193,8 @@
                         </div>
                         <div class="profile-data">
                           <span class="profile-name">{{ schueler.name }}</span>
-                          <span class="profile-email">{{
-                            schueler.email
-                          }}</span>
-                          <span class="profile-class">{{
-                            schueler.klasse
-                          }}</span>
+                          <span class="profile-email">{{ schueler.email }}</span>
+                          <span class="profile-class">{{ schueler.klasse }}</span>
                           <span class="profile-timestamp">
                             <q-icon name="access_time" size="xs" />
                             {{ formatDateTime(schueler.angemeldet_am) }}
@@ -214,202 +203,21 @@
                       </div>
 
                       <div class="student-controls">
-                        <span
-                          class="badge"
-                          :class="getStatusClass(schueler.status)"
-                        >
-                          {{ getStatusText(schueler.status) }}
-                        </span>
-
-                        <div
-                          class="control-btns"
-                          v-if="schueler.status === 'angemeldet'"
-                        >
-                          <button
-                            class="control-btn approve"
-                            @click="
-                              updateSchuelerStatus(
-                                schueler.anmeldung_id,
-                                'bestätigt'
-                              )
-                            "
-                          >
-                            <q-icon name="check" /> Bestätigen
-                          </button>
-                          <button
-                            class="control-btn decline"
-                            @click="
-                              updateSchuelerStatus(
-                                schueler.anmeldung_id,
-                                'abgelehnt'
-                              )
-                            "
-                          >
-                            <q-icon name="close" /> Ablehnen
-                          </button>
-                        </div>
-
-                        <div
-                          class="control-btns"
-                          v-else-if="schueler.status === 'abgelehnt'"
-                        >
-                          <button
-                            class="control-btn approve"
-                            @click="
-                              updateSchuelerStatus(
-                                schueler.anmeldung_id,
-                                'bestätigt'
-                              )
-                            "
-                          >
-                            <q-icon name="check" /> Bestätigen
-                          </button>
-                          <button
-                            class="control-btn neutral"
-                            @click="
-                              updateSchuelerStatus(
-                                schueler.anmeldung_id,
-                                'angemeldet'
-                              )
-                            "
-                          >
-                            <q-icon name="replay" /> Zurücksetzen
-                          </button>
-                        </div>
-
-                        <div
-                          class="control-btns"
-                          v-else-if="schueler.status === 'bestätigt'"
-                        >
-                          <button
-                            class="control-btn neutral"
-                            @click="
-                              updateSchuelerStatus(
-                                schueler.anmeldung_id,
-                                'angemeldet'
-                              )
-                            "
-                          >
-                            <q-icon name="replay" /> Zurücksetzen
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="student-group confirmed"
-                  v-if="getConfirmedSchuelerForTask(task.aufgabeid).length > 0"
-                >
-                  <div class="group-header">
-                    <h4>
-                      <q-icon name="verified" />
-                      Bestätigte Schüler
-                      <span class="counter success">{{
-                        getConfirmedSchuelerForTask(task.aufgabeid).length
-                      }}</span>
-                    </h4>
-                  </div>
-
-                  <div class="confirmed-grid">
-                    <div
-                      v-for="schueler in getConfirmedSchuelerForTask(
-                        task.aufgabeid
-                      )"
-                      :key="schueler.anmeldung_id"
-                      class="confirmed-box"
-                    >
-                      <div class="confirmed-top">
-                        <div class="confirmed-avatar">
-                          {{ schueler.name.charAt(0).toUpperCase() }}
-                        </div>
-                        <div class="confirmed-info">
-                          <span class="confirmed-name">{{
-                            schueler.name
-                          }}</span>
-                          <span class="confirmed-class">{{
-                            schueler.klasse
-                          }}</span>
-                        </div>
-                      </div>
-
-                      <div class="time-display" v-if="schueler.zeitInfo">
-                        <div
-                          class="time-block"
-                          v-if="schueler.zeitInfo.startzeit"
-                        >
-                          <span class="time-label">Start</span>
-                          <span class="time-val">{{
-                            formatTime(schueler.zeitInfo.startzeit)
-                          }}</span>
-                        </div>
-                        <div
-                          class="time-block"
-                          v-if="schueler.zeitInfo.endzeit"
-                        >
-                          <span class="time-label">Ende</span>
-                          <span class="time-val">{{
-                            formatTime(schueler.zeitInfo.endzeit)
-                          }}</span>
-                        </div>
-                        <div
-                          class="time-block highlight"
-                          v-if="schueler.zeitInfo.dauer"
-                        >
-                          <span class="time-label">Dauer</span>
-                          <span class="time-val"
-                            >{{ schueler.zeitInfo.dauer }} min</span
-                          >
-                        </div>
-                      </div>
-
-                      <div class="confirmed-controls">
-                        <div class="timer-btns">
-                          <button
-                            v-if="
-                              !schueler.zeitInfo || !schueler.zeitInfo.startzeit
-                            "
-                            class="timer-action start"
-                            @click="startZeitErfassung(schueler.anmeldung_id)"
-                          >
-                            <q-icon name="play_arrow" /> Start
-                          </button>
-                          <button
-                            v-else-if="
-                              schueler.zeitInfo.startzeit &&
-                              !schueler.zeitInfo.endzeit
-                            "
-                            class="timer-action stop"
-                            @click="stopZeitErfassung(schueler.anmeldung_id)"
-                          >
-                            <q-icon name="stop" /> Stop
-                          </button>
-                          <button
-                            v-else
-                            class="timer-action reset"
-                            @click="resetZeitErfassung(schueler.anmeldung_id)"
-                          >
-                            <q-icon name="replay" /> Reset
-                          </button>
-                        </div>
+                        <span class="badge status-confirmed">Angemeldet</span>
                         <button
-                          class="status-btn"
-                          @click="showStatusChangeDialog(schueler)"
+                          class="control-btn decline"
+                          @click="
+                            schuelerAbmelden(
+                              schueler.anmeldung_id,
+                              task.aufgabeid
+                            )
+                          "
                         >
-                          <q-icon name="swap_horiz" /> Status
+                          <q-icon name="person_remove" /> Abmelden
                         </button>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div
-                  v-if="getAllSchuelerForTask(task.aufgabeid).length === 0"
-                  class="no-data"
-                >
-                  <q-icon name="group_off" />
-                  <p>Noch keine Schüler angemeldet</p>
                 </div>
               </div>
             </div>
@@ -421,7 +229,7 @@
             <div class="title-icon admin">
               <q-icon name="admin_panel_settings" />
             </div>
-            <h2>Admin Übersicht</h2>
+            <h2>Admin Uebersicht</h2>
           </div>
 
           <div class="empty-container">
@@ -430,57 +238,12 @@
                 <q-icon name="admin_panel_settings" />
               </div>
               <h3>Admin Account</h3>
-              <p>Als Admin hast du keine persönlichen Aufgaben.</p>
+              <p>Als Admin hast du keine persoenlichen Aufgaben.</p>
             </div>
           </div>
         </section>
       </div>
     </main>
-
-    <q-dialog v-model="statusChangeDialog" persistent>
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3>Status ändern</h3>
-          <p>{{ selectedSchueler?.name }}</p>
-        </div>
-
-        <div class="modal-body">
-          <button
-            class="modal-option"
-            @click="changeSchuelerStatus('angemeldet')"
-          >
-            <div class="option-icon pending">
-              <q-icon name="schedule" />
-            </div>
-            <div class="option-content">
-              <span class="option-title">Nicht bestätigt</span>
-              <span class="option-subtitle"
-                >Zurück zu angemeldeten Schülern</span
-              >
-            </div>
-          </button>
-
-          <button
-            class="modal-option danger"
-            @click="changeSchuelerStatus('abgelehnt')"
-          >
-            <div class="option-icon danger">
-              <q-icon name="close" />
-            </div>
-            <div class="option-content">
-              <span class="option-title">Abmelden</span>
-              <span class="option-subtitle">Von Aufgabe abmelden</span>
-            </div>
-          </button>
-        </div>
-
-        <div class="modal-footer">
-          <button class="modal-cancel" @click="statusChangeDialog = false">
-            Abbrechen
-          </button>
-        </div>
-      </div>
-    </q-dialog>
   </div>
 </template>
 
@@ -491,9 +254,6 @@ import axios from "axios";
 const user = ref(null);
 const tasks = ref([]);
 const schuelerListen = ref({});
-const statusChangeDialog = ref(false);
-const selectedSchueler = ref(null);
-const zeitErfassung = ref({});
 
 const loadUser = async () => {
   try {
@@ -518,7 +278,7 @@ const loadTasks = async () => {
       withCredentials: true,
     });
 
-    tasks.value = res.data;
+    tasks.value = Array.isArray(res.data) ? res.data : [];
 
     if (user.value.klasse === "Lehrer") {
       for (const task of tasks.value) {
@@ -539,206 +299,33 @@ const loadSchuelerForTask = async (aufgabeid) => {
         withCredentials: true,
       }
     );
-    schuelerListen.value[aufgabeid] = res.data.map((schueler) => ({
-      ...schueler,
-      zeitInfo: schueler.zeit_info || null,
-    }));
+    schuelerListen.value[aufgabeid] = Array.isArray(res.data) ? res.data : [];
   } catch (err) {
-    console.error("Fehler beim Laden der Schüler:", err);
+    console.error("Fehler beim Laden der Schueler:", err);
     schuelerListen.value[aufgabeid] = [];
   }
 };
 
-const getAllSchuelerForTask = (aufgabeid) => {
+const getSchuelerForTask = (aufgabeid) => {
   return schuelerListen.value[aufgabeid] || [];
 };
 
-const getConfirmedSchuelerForTask = (aufgabeid) => {
-  return getAllSchuelerForTask(aufgabeid).filter(
-    (s) => s.status === "bestätigt"
-  );
-};
-
-const updateSchuelerStatus = async (anmeldung_id, status) => {
-  try {
-    await axios.patch(
-      `http://localhost:3000/anmeldungen/${anmeldung_id}/status`,
-      { status },
-      { withCredentials: true }
-    );
-
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === anmeldung_id
-      );
-      if (schueler) {
-        schueler.status = status;
-        break;
-      }
-    }
-  } catch (err) {
-    console.error("Fehler beim Aktualisieren des Status:", err);
-    alert("Fehler beim Aktualisieren des Status");
-  }
-};
-
-const startZeitErfassung = async (anmeldung_id) => {
-  try {
-    const startzeit = new Date();
-    const res = await axios.post(
-      `http://localhost:3000/anmeldungen/${anmeldung_id}/zeit/start`,
-      { startzeit },
-      { withCredentials: true }
-    );
-
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === anmeldung_id
-      );
-      if (schueler) {
-        schueler.zeitInfo = res.data.zeitInfo;
-        break;
-      }
-    }
-
-    zeitErfassung.value[anmeldung_id] = {
-      startzeit,
-      timer: setInterval(() => updateLiveDuration(anmeldung_id), 1000),
-    };
-  } catch (err) {
-    console.error("Fehler beim Starten der Zeit:", err);
-    alert("Fehler beim Starten der Zeit");
-  }
-};
-
-const stopZeitErfassung = async (anmeldung_id) => {
-  try {
-    const endzeit = new Date();
-    const res = await axios.post(
-      `http://localhost:3000/anmeldungen/${anmeldung_id}/zeit/stop`,
-      { endzeit },
-      { withCredentials: true }
-    );
-
-    if (zeitErfassung.value[anmeldung_id]) {
-      clearInterval(zeitErfassung.value[anmeldung_id].timer);
-      delete zeitErfassung.value[anmeldung_id];
-    }
-
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === anmeldung_id
-      );
-      if (schueler) {
-        schueler.zeitInfo = res.data.zeitInfo;
-        break;
-      }
-    }
-  } catch (err) {
-    console.error("Fehler beim Stoppen der Zeit:", err);
-    alert("Fehler beim Stoppen der Zeit");
-  }
-};
-
-const resetZeitErfassung = async (anmeldung_id) => {
-  try {
-    await axios.delete(
-      `http://localhost:3000/anmeldungen/${anmeldung_id}/zeit`,
-      { withCredentials: true }
-    );
-
-    if (zeitErfassung.value[anmeldung_id]) {
-      clearInterval(zeitErfassung.value[anmeldung_id].timer);
-      delete zeitErfassung.value[anmeldung_id];
-    }
-
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === anmeldung_id
-      );
-      if (schueler) {
-        schueler.zeitInfo = null;
-        break;
-      }
-    }
-  } catch (err) {
-    console.error("Fehler beim Zurücksetzen der Zeit:", err);
-    alert("Fehler beim Zurücksetzen der Zeit");
-  }
-};
-
-const updateLiveDuration = (anmeldung_id) => {
-  const timerData = zeitErfassung.value[anmeldung_id];
-  if (timerData) {
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === anmeldung_id
-      );
-      if (schueler && schueler.zeitInfo) {
-        const currentDuration = Math.round(
-          (new Date() - new Date(timerData.startzeit)) / (1000 * 60)
-        );
-        schueler.zeitInfo.dauer = currentDuration;
-        break;
-      }
-    }
-  }
-};
-
-const showStatusChangeDialog = (schueler) => {
-  selectedSchueler.value = schueler;
-  statusChangeDialog.value = true;
-};
-
-const changeSchuelerStatus = async (status) => {
-  if (!selectedSchueler.value) return;
-
-  try {
-    await axios.patch(
-      `http://localhost:3000/anmeldungen/${selectedSchueler.value.anmeldung_id}/status`,
-      { status },
-      { withCredentials: true }
-    );
-
-    for (const aufgabeid in schuelerListen.value) {
-      const schueler = schuelerListen.value[aufgabeid].find(
-        (s) => s.anmeldung_id === selectedSchueler.value.anmeldung_id
-      );
-      if (schueler) {
-        schueler.status = status;
-        break;
-      }
-    }
-
-    statusChangeDialog.value = false;
-    selectedSchueler.value = null;
-  } catch (err) {
-    console.error("Fehler beim Ändern des Status:", err);
-    alert("Fehler beim Ändern des Status");
-  }
-};
-
-const lehrerAbmelden = async () => {
-  if (
-    !confirm(
-      "Möchten Sie sich wirklich von dieser Aufgabe abmelden? Alle Schüler-Anmeldungen bleiben erhalten."
-    )
-  ) {
+const schuelerAbmelden = async (anmeldungId, aufgabeid) => {
+  if (!confirm("Schueler wirklich von dieser Aufgabe abmelden?")) {
     return;
   }
 
   try {
-    await axios.post(
-      "http://localhost:3000/lehrer/abmelden",
-      {},
-      { withCredentials: true }
-    );
+    await axios.delete(`http://localhost:3000/anmeldungen/${anmeldungId}`, {
+      withCredentials: true,
+    });
 
-    alert("Erfolgreich von der Aufgabe abgemeldet!");
-    await loadTasks();
+    schuelerListen.value[aufgabeid] = getSchuelerForTask(aufgabeid).filter(
+      (schueler) => schueler.anmeldung_id !== anmeldungId
+    );
   } catch (err) {
-    console.error("Fehler beim Abmelden:", err);
-    alert("Fehler beim Abmelden von der Aufgabe");
+    console.error("Fehler beim Abmelden des Schuelers:", err);
+    alert(err.response?.data?.error || "Fehler beim Abmelden des Schuelers");
   }
 };
 
@@ -758,49 +345,27 @@ const logout = async () => {
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("de-DE");
+  return new Date(dateString).toLocaleDateString("de-DE");
 };
 
 const formatTime = (timeString) => {
   if (!timeString) return "";
-  if (timeString instanceof Date) {
-    return timeString.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-  return timeString.substring(0, 5);
+  return String(timeString).substring(0, 5);
 };
 
 const formatDateTime = (dateTimeString) => {
   if (!dateTimeString) return "";
-  const date = new Date(dateTimeString);
-  return date.toLocaleString("de-DE");
+  return new Date(dateTimeString).toLocaleString("de-DE");
 };
 
 const getStatusClass = (status) => {
-  switch (status) {
-    case "bestätigt":
-      return "status-confirmed";
-    case "abgelehnt":
-      return "status-rejected";
-    case "angemeldet":
-    default:
-      return "status-pending";
-  }
+  if (status === "abgelehnt") return "status-rejected";
+  return "status-confirmed";
 };
 
 const getStatusText = (status) => {
-  switch (status) {
-    case "bestätigt":
-      return "Bestätigt ✓";
-    case "abgelehnt":
-      return "Abgelehnt ✗";
-    case "angemeldet":
-    default:
-      return "Ausstehend";
-  }
+  if (status === "abgelehnt") return "Abgemeldet";
+  return "Angemeldet";
 };
 
 const getBadgeClass = () => {
@@ -824,14 +389,14 @@ const getUserIcon = () => {
   return "person";
 };
 
+const goBack = () => {
+  window.location.href = "http://localhost:9000/main";
+};
+
 onMounted(async () => {
   await loadUser();
   await loadTasks();
 });
-
-const goBack = () => {
-  window.location.href = "http://localhost:9000/main";
-};
 </script>
 
 <style scoped>
@@ -846,8 +411,6 @@ const goBack = () => {
   width: 100%;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   color: #ffffff;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
   position: relative;
   overflow-x: hidden;
 }
@@ -868,7 +431,6 @@ const goBack = () => {
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.15;
-  animation: float 20s ease-in-out infinite;
 }
 
 .orb-1 {
@@ -877,7 +439,6 @@ const goBack = () => {
   background: linear-gradient(135deg, #00d4ff, #0099ff);
   top: -200px;
   left: -200px;
-  animation-delay: 0s;
 }
 
 .orb-2 {
@@ -886,7 +447,6 @@ const goBack = () => {
   background: linear-gradient(135deg, #ff6b35, #ff8c42);
   bottom: -150px;
   right: -150px;
-  animation-delay: -7s;
 }
 
 .orb-3 {
@@ -895,20 +455,6 @@ const goBack = () => {
   background: linear-gradient(135deg, #00f5a0, #00d4aa);
   top: 40%;
   right: 10%;
-  animation-delay: -14s;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(50px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-30px, 30px) scale(0.9);
-  }
 }
 
 .page-header {
@@ -916,9 +462,8 @@ const goBack = () => {
   top: 0;
   z-index: 100;
   background: rgba(10, 14, 39, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0;
 }
 
 .header-container {
@@ -948,23 +493,11 @@ const goBack = () => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
 }
 
 .nav-btn.logout {
   background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
   border: none;
-}
-
-.nav-btn.logout:hover {
-  box-shadow: 0 8px 24px rgba(255, 71, 87, 0.4);
 }
 
 .header-title {
@@ -977,15 +510,11 @@ const goBack = () => {
   background: linear-gradient(135deg, #00d4ff 0%, #00f5a0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 4px;
-  letter-spacing: -0.5px;
 }
 
 .header-title p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .header-user {
@@ -1001,12 +530,6 @@ const goBack = () => {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50px;
-  transition: all 0.3s ease;
-}
-
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 212, 255, 0.3);
 }
 
 .user-icon {
@@ -1019,26 +542,22 @@ const goBack = () => {
   justify-content: center;
   font-size: 22px;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
 .user-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .user-name {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
 }
 
 .user-role {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
   padding: 3px 10px;
   border-radius: 6px;
   width: fit-content;
@@ -1063,7 +582,6 @@ const goBack = () => {
   position: relative;
   z-index: 1;
   padding: 48px 40px;
-  min-height: calc(100vh - 100px);
 }
 
 .content-wrapper {
@@ -1087,41 +605,34 @@ const goBack = () => {
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
 }
 
 .title-icon.teacher {
   background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.3);
 }
 
 .title-icon.admin {
   background: linear-gradient(135deg, #ff6b35, #ff8c42);
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
 }
 
 .section-title h2 {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.5px;
 }
 
 .empty-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 100px 40px;
+  padding: 90px 40px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-  backdrop-filter: blur(10px);
 }
 
 .empty-content {
   text-align: center;
-  max-width: 500px;
+  max-width: 520px;
 }
 
 .empty-illustration {
@@ -1129,69 +640,44 @@ const goBack = () => {
   height: 120px;
   margin: 0 auto 28px;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.15),
-    rgba(0, 153, 255, 0.15)
-  );
+  background: rgba(0, 212, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 56px;
-  color: rgba(0, 212, 255, 0.6);
 }
 
 .empty-illustration.teacher {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 245, 160, 0.15),
-    rgba(0, 212, 170, 0.15)
-  );
-  color: rgba(0, 245, 160, 0.6);
+  background: rgba(0, 245, 160, 0.15);
 }
 
 .empty-illustration.admin {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 107, 53, 0.15),
-    rgba(255, 140, 66, 0.15)
-  );
-  color: rgba(255, 107, 53, 0.6);
+  background: rgba(255, 107, 53, 0.15);
 }
 
 .empty-content h3 {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .empty-content p {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 32px;
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
 }
 
 .cta-button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 32px;
+  padding: 14px 30px;
   background: linear-gradient(135deg, #00d4ff, #0099ff);
   color: #ffffff;
   border: none;
   border-radius: 14px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
-}
-
-.cta-button:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
 }
 
 .tasks-container {
@@ -1205,26 +691,6 @@ const goBack = () => {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 28px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.task-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #00d4ff, #00f5a0);
-}
-
-.task-item:hover {
-  transform: translateY(-6px);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(0, 212, 255, 0.3);
-  box-shadow: 0 20px 60px rgba(0, 212, 255, 0.15);
 }
 
 .task-header {
@@ -1238,9 +704,6 @@ const goBack = () => {
 .task-header h3 {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
-  flex: 1;
-  line-height: 1.3;
 }
 
 .badge {
@@ -1249,34 +712,23 @@ const goBack = () => {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.badge.status-pending {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .badge.status-confirmed {
   background: rgba(0, 245, 160, 0.2);
   color: #00f5a0;
-  border: 1px solid rgba(0, 245, 160, 0.3);
 }
 
 .badge.status-rejected {
   background: rgba(255, 71, 87, 0.2);
   color: #ff4757;
-  border: 1px solid rgba(255, 71, 87, 0.3);
 }
 
 .task-desc {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.7;
-  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 
 .task-info {
@@ -1293,24 +745,13 @@ const goBack = () => {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s ease;
-}
-
-.info-chip:hover {
-  background: rgba(0, 0, 0, 0.4);
-  color: #ffffff;
-}
-
-.info-chip .q-icon {
-  color: #00d4ff;
-  font-size: 18px;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .teacher-panel {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
 }
 
 .task-management {
@@ -1318,257 +759,180 @@ const goBack = () => {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
 }
 
 .task-info-card {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 32px;
+  gap: 24px;
+  padding: 28px;
   background: linear-gradient(
     135deg,
     rgba(0, 212, 255, 0.08),
     rgba(0, 245, 160, 0.05)
   );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  gap: 32px;
 }
 
 .task-info-content h3 {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .task-info-content p {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 18px;
-  line-height: 1.6;
-  max-width: 700px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 14px;
 }
 
 .task-details {
   display: flex;
-  gap: 24px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .task-details span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 500;
-}
-
-.task-details .q-icon {
-  color: #00d4ff;
 }
 
 .task-info-actions {
   display: flex;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .icon-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 12px 18px;
   border-radius: 12px;
-  color: #ffffff;
+  border: none;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.icon-btn:hover {
-  transform: translateY(-3px);
 }
 
 .icon-btn.refresh {
   background: linear-gradient(135deg, #00d4ff, #0099ff);
-  border: none;
-}
-
-.icon-btn.refresh:hover {
-  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+  color: #ffffff;
 }
 
 .icon-btn.danger {
-  background: rgba(255, 71, 87, 0.1);
-  border-color: rgba(255, 71, 87, 0.3);
+  background: rgba(255, 71, 87, 0.15);
   color: #ff4757;
-}
-
-.icon-btn.danger:hover {
-  background: rgba(255, 71, 87, 0.2);
-  box-shadow: 0 10px 30px rgba(255, 71, 87, 0.3);
+  border: 1px solid rgba(255, 71, 87, 0.35);
 }
 
 .students-management {
-  padding: 0;
+  padding: 28px;
 }
 
 .student-group {
-  padding: 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.student-group:last-child {
-  border-bottom: none;
-}
-
-.group-header {
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .group-header h4 {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
 }
 
 .counter {
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.counter.success {
-  background: rgba(0, 245, 160, 0.2);
-  color: #00f5a0;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
 }
 
 .student-grid {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .student-box {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 14px;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  transition: all 0.3s ease;
-}
-
-.student-box:hover {
-  background: rgba(0, 0, 0, 0.35);
-  border-color: rgba(0, 212, 255, 0.3);
-}
-
-.student-box.is-rejected {
-  border-left: 4px solid #ff4757;
-  background: rgba(255, 71, 87, 0.05);
-}
-
-.student-box.is-confirmed {
-  border-left: 4px solid #00f5a0;
-  background: rgba(0, 245, 160, 0.05);
 }
 
 .student-profile {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
 }
 
 .profile-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #00d4ff, #0099ff);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
 .profile-data {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .profile-name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
 }
 
 .profile-email {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .profile-class {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .profile-timestamp {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .student-controls {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
-}
-
-.control-btns {
-  display: flex;
   gap: 10px;
 }
 
 .control-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 10px;
+  border: none;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  border: none;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.control-btn.approve {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  color: #0a0e27;
-}
-
-.control-btn.approve:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(0, 245, 160, 0.4);
 }
 
 .control-btn.decline {
@@ -1576,323 +940,18 @@ const goBack = () => {
   color: #ffffff;
 }
 
-.control-btn.decline:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(255, 71, 87, 0.4);
-}
-
-.control-btn.neutral {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.control-btn.neutral:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-3px);
-}
-
-.confirmed-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 18px;
-}
-
-.confirmed-box {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 245, 160, 0.08),
-    rgba(0, 212, 255, 0.05)
-  );
-  border: 1px solid rgba(0, 245, 160, 0.2);
-  border-radius: 18px;
-  padding: 24px;
-  transition: all 0.3s ease;
-}
-
-.confirmed-box:hover {
-  border-color: rgba(0, 245, 160, 0.4);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 245, 160, 0.2);
-}
-
-.confirmed-top {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.confirmed-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 800;
-  color: #0a0e27;
-  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.3);
-}
-
-.confirmed-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.confirmed-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.confirmed-class {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.time-display {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 12px;
-}
-
-.time-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.time-block.highlight {
-  margin-left: auto;
-  text-align: right;
-}
-
-.time-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 700;
-}
-
-.time-val {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.confirmed-controls {
-  display: flex;
-  gap: 10px;
-}
-
-.timer-btns {
-  display: flex;
-  gap: 8px;
-}
-
-.timer-action {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.timer-action.start {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  color: #0a0e27;
-}
-
-.timer-action.stop {
-  background: linear-gradient(135deg, #ff4757, #ff6348);
-  color: #ffffff;
-}
-
-.timer-action.reset {
-  background: linear-gradient(135deg, #ffc107, #ff9800);
-  color: #0a0e27;
-}
-
-.timer-action:hover {
-  transform: translateY(-3px);
-}
-
-.status-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-left: auto;
-}
-
-.status-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-3px);
-}
-
 .no-data {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px;
-  color: rgba(255, 255, 255, 0.3);
+  padding: 70px 20px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .no-data .q-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.4;
-}
-
-.no-data p {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.modal-container {
-  background: linear-gradient(135deg, #1a1f3a, #0a0e27);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  width: 460px;
-  max-width: 92vw;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-  padding: 28px 32px;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.1),
-    rgba(0, 245, 160, 0.05)
-  );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.modal-header h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 6px;
-}
-
-.modal-header p {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.modal-body {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.modal-option {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  text-align: left;
-}
-
-.modal-option:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 212, 255, 0.4);
-  transform: translateX(6px);
-}
-
-.modal-option.danger:hover {
-  border-color: rgba(255, 71, 87, 0.4);
-}
-
-.option-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.option-icon.pending {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-}
-
-.option-icon.danger {
-  background: rgba(255, 71, 87, 0.2);
-  color: #ff4757;
-}
-
-.option-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.option-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.option-subtitle {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.modal-footer {
-  padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: flex-end;
-}
-
-.modal-cancel {
-  padding: 12px 28px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.modal-cancel:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  font-size: 56px;
+  margin-bottom: 14px;
 }
 
 @media (max-width: 1200px) {
@@ -1901,16 +960,9 @@ const goBack = () => {
     gap: 20px;
   }
 
-  .header-actions {
-    justify-content: center;
-  }
-
+  .header-actions,
   .header-user {
     justify-content: center;
-  }
-
-  .tasks-container {
-    grid-template-columns: 1fr;
   }
 
   .task-info-card {
@@ -1919,7 +971,6 @@ const goBack = () => {
 
   .task-info-actions {
     width: 100%;
-    justify-content: flex-start;
   }
 }
 
@@ -1936,36 +987,17 @@ const goBack = () => {
     font-size: 26px;
   }
 
-  .nav-btn span {
-    display: none;
-  }
-
-  .nav-btn {
-    padding: 12px;
-  }
-
-  .section-title h2 {
-    font-size: 28px;
+  .tasks-container {
+    grid-template-columns: 1fr;
   }
 
   .student-box {
     flex-direction: column;
     align-items: flex-start;
-    gap: 20px;
   }
 
   .student-controls {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-
-  .confirmed-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .confirmed-controls {
-    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }
 </style>

@@ -298,8 +298,7 @@
                     currentUser &&
                     currentUser.klasse &&
                     currentUser.klasse !== 'Admin' &&
-                    currentUser.klasse !== 'Lehrer' &&
-                    !currentUser.klasse.toLowerCase().includes('fitn')
+                    currentUser.klasse !== 'Lehrer'
                   "
                   class="panel-btn register"
                   @click="schuelerAnmelden"
@@ -315,22 +314,6 @@
                       isAlreadyRegisteredForTask
                         ? "Bereits angemeldet"
                         : "Anmelden"
-                    }}
-                  </span>
-                </button>
-
-                <button
-                  v-if="currentUser && currentUser.klasse === 'Lehrer'"
-                  class="panel-btn teacher"
-                  @click="lehrerAnmelden"
-                  :disabled="!activeTask || activeTask.lehrerid"
-                >
-                  <q-icon name="assignment_ind" />
-                  <span>
-                    {{
-                      activeTask?.lehrerid
-                        ? "Aufgabe vergeben"
-                        : "Als Lehrkraft anmelden"
                     }}
                   </span>
                 </button>
@@ -448,7 +431,7 @@ export default {
           : [task.ziel_klassen];
 
         return zielKlassen.some((ziel) =>
-          userKlasse.includes(ziel.toLowerCase())
+          userKlasse.includes(String(ziel).toLowerCase())
         );
       });
     },
@@ -597,25 +580,18 @@ export default {
     async schuelerAnmelden() {
       if (!this.activeTask) return;
 
-      await axios.post(
-        `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/anmelden`,
-        {},
-        { withCredentials: true }
-      );
+      try {
+        await axios.post(
+          `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/anmelden`,
+          {},
+          { withCredentials: true }
+        );
 
-      await this.loadUserRegisteredTasks();
-    },
-
-    async lehrerAnmelden() {
-      if (!this.activeTask) return;
-
-      await axios.post(
-        `http://localhost:3000/aufgaben/${this.activeTask.aufgabeid}/lehrer-anmelden`,
-        {},
-        { withCredentials: true }
-      );
-
-      await this.loadTasks();
+        await this.loadUserRegisteredTasks();
+      } catch (err) {
+        const message = err?.response?.data?.error || "Anmeldung fehlgeschlagen";
+        alert(message);
+      }
     },
 
     goToAdminDashboard() {
