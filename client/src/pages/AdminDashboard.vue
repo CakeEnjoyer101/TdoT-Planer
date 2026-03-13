@@ -1,16 +1,51 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, nextTick } from "vue";
 import axios from "axios";
 
+const createTaskForm = ref(null);
 const titel = ref("");
 const beschreibung = ref("");
 const datum = ref("");
 const uhrzeit = ref("");
 const lehrerid = ref(null);
+const zielKlassen = ref([]);
 
 const lehrerAccounts = ref([]);
 const aufgaben = ref([]);
 const zuweisungen = ref({});
+
+const klassenOptions = [
+  "1AHIT",
+  "1BHIT",
+  "1CHIT",
+  "1AFITN",
+  "1BFITN",
+  "2AHIT",
+  "2BHIT",
+  "2CHIT",
+  "2AFITN",
+  "2BFITN",
+  "3AHIT",
+  "3BHIT",
+  "3CHIT",
+  "3AFITN",
+  "3BFITN",
+  "4AHITN",
+  "4CHITM",
+  "4BHITM",
+  "4AFITN",
+  "4BFITN",
+  "5AHITN",
+  "5BHITM",
+  "5CHITM",
+];
+
+const klassenSelectOptions = computed(() =>
+  klassenOptions.map((klasse) => ({
+    label: klasse,
+    value: klasse,
+  }))
+);
 
 const lehrerOptions = computed(() => [
   { label: "Kein Lehrer zugewiesen", value: null },
@@ -30,7 +65,6 @@ const aufgabeOptions = computed(() => [
   })),
 ]);
 
-
 onMounted(async () => {
   try {
     const response = await axios.get("http://localhost:3000/auth/profile", {
@@ -38,7 +72,9 @@ onMounted(async () => {
     });
 
     if (response.data.user.klasse !== "Admin") {
-      alert("Zugriff verweigert: Nur Administratoren duerfen diese Seite aufrufen.");
+      alert(
+        "Zugriff verweigert: Nur Administratoren duerfen diese Seite aufrufen."
+      );
       window.location.href = "http://localhost:9000/main";
       return;
     }
@@ -81,12 +117,21 @@ function syncLehrerZuweisungen() {
 
 async function submit() {
   try {
+    const normalizedZielKlassen = Array.from(
+      new Set(
+        zielKlassen.value
+          .map((klasse) => String(klasse || "").trim())
+          .filter(Boolean)
+      )
+    );
+
     const payload = {
       titel: titel.value,
       beschreibung: beschreibung.value,
       datum: datum.value,
       uhrzeit: uhrzeit.value,
       lehrerid: lehrerid.value,
+      ziel_klassen: normalizedZielKlassen,
     };
 
     await axios.post("http://localhost:3000/aufgaben", payload, {
@@ -100,6 +145,10 @@ async function submit() {
     datum.value = "";
     uhrzeit.value = "";
     lehrerid.value = null;
+    zielKlassen.value = [];
+
+    await nextTick();
+    createTaskForm.value?.resetValidation();
 
     await loadAufgaben();
     syncLehrerZuweisungen();
@@ -188,7 +237,11 @@ const formatTime = (timeString) => {
               <h2>Neue Aufgabe erstellen</h2>
             </div>
 
-            <q-form @submit.prevent="submit" class="task-form">
+            <q-form
+              ref="createTaskForm"
+              @submit.prevent="submit"
+              class="task-form"
+            >
               <q-input
                 v-model="titel"
                 label="Titel *"
@@ -244,10 +297,29 @@ const formatTime = (timeString) => {
                 class="form-input"
               />
 
+              <q-select
+                v-model="zielKlassen"
+                :options="klassenSelectOptions"
+                outlined
+                color="cyan"
+                label="Zielklassen *"
+                class="form-input"
+                multiple
+                use-chips
+                emit-value
+                map-options
+                hint="Wähle eine oder mehrere Klassen"
+                :rules="[
+                  (val) =>
+                    (Array.isArray(val) && val.length > 0) ||
+                    'Mindestens eine Klasse ist erforderlich',
+                ]"
+              />
+
               <button
                 type="submit"
                 class="submit-btn"
-                :disabled="!titel || !datum"
+                :disabled="!titel || !datum || zielKlassen.length === 0"
               >
                 <q-icon name="add_task" />
                 <span>Aufgabe erstellen</span>
@@ -262,7 +334,6 @@ const formatTime = (timeString) => {
               <q-icon name="school" />
               <h2>Lehrer-Accounts</h2>
             </div>
-
 
             <div v-if="lehrerAccounts.length === 0" class="empty-state">
               Keine Lehrer-Accounts gefunden.
@@ -292,7 +363,9 @@ const formatTime = (timeString) => {
                     dense
                     label="Aufgabe wählen"
                     class="teacher-task-select"
-                    @update:model-value="lehrerAufgabeSpeichern(lehrer.lehrerid)"
+                    @update:model-value="
+                      lehrerAufgabeSpeichern(lehrer.lehrerid)
+                    "
                   />
                 </div>
               </div>
@@ -300,7 +373,10 @@ const formatTime = (timeString) => {
           </div>
         </div>
 
-        <button class="back-btn" @click="window.location.href = 'http://localhost:9000/main'">
+        <button
+          class="back-btn"
+          @click="window.location.href = 'http://localhost:9000/main'"
+        >
           <q-icon name="arrow_back" />
           <span>Zurueck zur Hauptseite</span>
         </button>

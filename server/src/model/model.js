@@ -55,11 +55,22 @@ export const getAdminDetails = async (userid) => {
 
 // In model.js - createAufgabe anpassen
 export const createAufgabe = async (data) => {
-  const { titel, beschreibung, datum, uhrzeit, lehrerid } = data;
+  const { titel, beschreibung, datum, uhrzeit, lehrerid, ziel_klassen: zielKlassen } = data;
+  const normalizedZielKlassen = Array.isArray(zielKlassen)
+    ? zielKlassen.map((klasse) => String(klasse || '').trim()).filter(Boolean)
+    : [];
+
   const result = await query(
-    `INSERT INTO aufgabe (titel, beschreibung, datum, uhrzeit, lehrerid)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [titel, beschreibung, datum, uhrzeit, lehrerid],
+    `INSERT INTO aufgabe (titel, beschreibung, datum, uhrzeit, lehrerid, ziel_klassen)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [
+      titel,
+      beschreibung,
+      datum,
+      uhrzeit,
+      lehrerid,
+      normalizedZielKlassen.length > 0 ? normalizedZielKlassen : null,
+    ],
   );
   return result.rows[0];
 };
