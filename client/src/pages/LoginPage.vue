@@ -278,8 +278,6 @@ export default {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
-
 * {
   margin: 0;
   padding: 0;
@@ -294,25 +292,25 @@ export default {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-  font-family: "Outfit", sans-serif;
+  background: var(--app-bg-gradient);
+  font-family: var(--font-sans);
 }
 
 .background-pattern {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.4;
+  opacity: 0.52;
 }
 
 .grid-pattern {
   position: absolute;
   inset: 0;
   background-image: linear-gradient(
-      rgba(211, 47, 47, 0.03) 1px,
+      rgba(47, 111, 219, 0.05) 1px,
       transparent 1px
     ),
-    linear-gradient(90deg, rgba(211, 47, 47, 0.03) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(47, 111, 219, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: gridMove 20s linear infinite;
 }
@@ -337,7 +335,7 @@ export default {
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, #d32f2f 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(47, 111, 219, 0.4) 0%, transparent 70%);
   top: -10%;
   left: -5%;
   animation-delay: 0s;
@@ -346,7 +344,7 @@ export default {
 .orb-2 {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, #c62828 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(43, 136, 120, 0.32) 0%, transparent 70%);
   bottom: -15%;
   right: -10%;
   animation-delay: 2s;
@@ -355,7 +353,7 @@ export default {
 .orb-3 {
   width: 350px;
   height: 350px;
-  background: radial-gradient(circle, #b71c1c 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(201, 135, 55, 0.24) 0%, transparent 70%);
   top: 50%;
   left: 50%;
   animation-delay: 4s;
@@ -407,7 +405,7 @@ export default {
 
 .branding-content {
   text-align: center;
-  color: white;
+  color: var(--text-primary);
 }
 
 .logo-wrapper {
@@ -431,13 +429,17 @@ export default {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  background: linear-gradient(
+    145deg,
+    var(--accent-primary) 0%,
+    var(--accent-primary-strong) 100%
+  );
   padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4),
-    0 0 0 20px rgba(211, 47, 47, 0.1), inset 0 0 30px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(13, 35, 68, 0.38),
+    0 0 0 18px rgba(47, 111, 219, 0.08), inset 0 0 30px rgba(255, 255, 255, 0.08);
   animation: ringPulse 3s ease-in-out infinite;
 }
 
@@ -445,11 +447,11 @@ export default {
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4);
+    box-shadow: 0 10px 40px rgba(13, 35, 68, 0.38);
   }
   50% {
     transform: scale(1.05);
-    box-shadow: 0 15px 50px rgba(211, 47, 47, 0.6);
+    box-shadow: 0 15px 50px rgba(13, 35, 68, 0.52);
   }
 }
 
@@ -457,23 +459,23 @@ export default {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  background: linear-gradient(135deg, rgba(10, 19, 35, 0.96) 0%, rgba(16, 32, 51, 0.98) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid rgba(211, 47, 47, 0.3);
+  border: 3px solid rgba(47, 111, 219, 0.28);
 }
 
 .logo-icon {
   font-size: 80px !important;
-  color: #d32f2f;
-  filter: drop-shadow(0 0 20px rgba(211, 47, 47, 0.6));
+  color: #dbe8ff;
+  filter: drop-shadow(0 0 20px rgba(47, 111, 219, 0.45));
 }
 
 .school-title {
   font-size: 56px;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 0%, #d32f2f 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #b6cdf5 55%, #6aa2ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -484,16 +486,16 @@ export default {
 
 @keyframes titleGlow {
   from {
-    filter: drop-shadow(0 0 10px rgba(211, 47, 47, 0.3));
+    filter: drop-shadow(0 0 10px rgba(47, 111, 219, 0.18));
   }
   to {
-    filter: drop-shadow(0 0 20px rgba(211, 47, 47, 0.6));
+    filter: drop-shadow(0 0 18px rgba(47, 111, 219, 0.35));
   }
 }
 
 .school-subtitle {
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   font-weight: 400;
   margin-bottom: 50px;
   letter-spacing: 2px;
@@ -516,10 +518,11 @@ export default {
   padding: 16px 24px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  border: 1px solid rgba(211, 47, 47, 0.2);
+  border: 1px solid var(--border-soft);
   width: 100%;
   transition: all 0.3s ease;
   animation: featureSlideIn 0.6s ease-out backwards;
+  box-shadow: var(--shadow-soft);
 }
 
 @keyframes featureSlideIn {
@@ -534,18 +537,18 @@ export default {
 }
 
 .feature-item:hover {
-  background: rgba(211, 47, 47, 0.1);
-  border-color: rgba(211, 47, 47, 0.4);
+  background: rgba(47, 111, 219, 0.1);
+  border-color: rgba(47, 111, 219, 0.3);
   transform: translateX(8px);
 }
 
 .feature-icon {
-  color: #d32f2f;
+  color: #8cb8ff;
   font-size: 24px !important;
 }
 
 .feature-text {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 16px;
   font-weight: 500;
 }
@@ -570,12 +573,12 @@ export default {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-light);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-strong);
   overflow: hidden;
-  border: 1px solid rgba(211, 47, 47, 0.1);
+  border: 1px solid rgba(109, 131, 163, 0.18);
 }
 
 .card-content {
@@ -590,14 +593,14 @@ export default {
 .form-title {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-dark);
   margin-bottom: 8px;
   letter-spacing: -0.5px;
 }
 
 .form-subtitle {
   font-size: 15px;
-  color: #666;
+  color: var(--text-dark-muted);
   font-weight: 400;
 }
 
@@ -616,7 +619,7 @@ export default {
 .input-label {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-dark);
   padding-left: 4px;
 }
 
@@ -627,48 +630,55 @@ export default {
 .custom-input :deep(.q-field__control) {
   height: 56px;
   border-radius: 12px;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
+  background: #f8fafc;
+  border: 2px solid #d7dee8;
   transition: all 0.3s ease;
 }
 
 .custom-input :deep(.q-field__control):hover {
-  border-color: #d32f2f;
+  border-color: var(--accent-primary);
   background: #ffffff;
 }
 
 .custom-input :deep(.q-field--focused .q-field__control) {
-  border-color: #d32f2f !important;
+  border-color: var(--accent-primary) !important;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+  box-shadow: 0 0 0 4px rgba(47, 111, 219, 0.12);
 }
 
 .custom-input :deep(.q-field__native) {
   font-size: 15px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--text-dark);
 }
 
 .custom-input :deep(.q-field__native::placeholder) {
-  color: #999;
+  color: #7a8798;
+}
+
+.custom-input :deep(.q-field__label),
+.custom-input :deep(.q-field__marginal),
+.custom-input :deep(.q-field__bottom),
+.custom-input :deep(.q-field__messages div) {
+  color: var(--text-dark-muted) !important;
 }
 
 .input-icon {
-  color: #d32f2f;
+  color: var(--accent-primary);
   font-size: 22px !important;
 }
 
 .lehrer-email :deep(.q-field__control) {
-  border-color: #388e3c !important;
-  background: #f1f8f4;
+  border-color: var(--accent-success) !important;
+  background: #eef8f1;
 }
 
 .lehrer-email :deep(.q-field--focused .q-field__control) {
-  box-shadow: 0 0 0 4px rgba(56, 142, 60, 0.1) !important;
+  box-shadow: 0 0 0 4px rgba(52, 154, 107, 0.12) !important;
 }
 
 .lehrer-email .input-icon {
-  color: #388e3c;
+  color: var(--accent-success);
 }
 
 .submit-btn {
@@ -678,8 +688,12 @@ export default {
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0.3px;
-  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-  box-shadow: 0 4px 14px rgba(211, 47, 47, 0.3),
+  background: linear-gradient(
+    145deg,
+    var(--accent-primary) 0%,
+    var(--accent-primary-strong) 100%
+  );
+  box-shadow: 0 4px 14px rgba(31, 88, 185, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
   margin-top: 8px;
@@ -687,7 +701,7 @@ export default {
 
 .submit-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4),
+  box-shadow: 0 6px 20px rgba(31, 88, 185, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -712,12 +726,12 @@ export default {
 .divider::after {
   content: "";
   flex: 1;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #d7dee8;
 }
 
 .divider-text {
   padding: 0 16px;
-  color: #999;
+  color: #7a8798;
   font-size: 13px;
   font-weight: 500;
 }
@@ -728,13 +742,13 @@ export default {
   font-size: 14px;
   font-weight: 500;
   text-transform: none;
-  color: #666;
+  color: var(--text-dark-muted);
   transition: all 0.3s ease;
 }
 
 .toggle-btn:hover {
-  background: rgba(211, 47, 47, 0.05);
-  color: #d32f2f;
+  background: rgba(47, 111, 219, 0.06);
+  color: var(--accent-primary);
 }
 
 .message-box {
@@ -749,15 +763,15 @@ export default {
 }
 
 .error-box {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
+  background: #fff1f2;
+  color: #9f3040;
+  border: 1px solid #efbcc3;
 }
 
 .success-box {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
+  background: #eef8f1;
+  color: #276d4d;
+  border: 1px solid #b8dcc4;
 }
 
 .message-fade-enter-active,
@@ -778,7 +792,7 @@ export default {
 .footer-text {
   text-align: center;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   font-weight: 400;
 }
 

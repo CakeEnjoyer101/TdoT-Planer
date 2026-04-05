@@ -8,6 +8,7 @@ import passport from './passport/passport.js';
 
 import testRoute from './routes/test.js';
 import routes from './routes/routes.js';
+import { ensureSchema } from './model/schema.js';
 
 dotenv.config();
 
@@ -42,4 +43,13 @@ app.use('/test', testRoute);
 app.use('/', routes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+
+const startServer = async () => {
+  await ensureSchema();
+  app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+};
+
+startServer().catch((error) => {
+  console.error('Server konnte nicht gestartet werden:', error);
+  process.exit(1);
+});

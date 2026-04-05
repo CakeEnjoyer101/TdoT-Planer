@@ -277,17 +277,17 @@
                   }}
                 </p>
                 <div class="info-metadata">
-                  <div v-if="activeTask?.datum" class="meta-chip">
+                  <div v-if="activeTask" class="meta-chip">
                     <q-icon name="event" />
-                    <span>{{ formatDate(activeTask.datum) }}</span>
+                    <span>Tag 1: {{ formatTaskDay(activeTask, 1) }}</span>
                   </div>
-                  <div v-if="activeTask?.uhrzeit" class="meta-chip">
-                    <q-icon name="access_time" />
-                    <span>{{ formatTime(activeTask.uhrzeit) }} Uhr</span>
+                  <div v-if="activeTask" class="meta-chip">
+                    <q-icon name="event_available" />
+                    <span>Tag 2: {{ formatTaskDay(activeTask, 2) }}</span>
                   </div>
-                  <div v-if="activeTask?.lehrer_name" class="meta-chip">
+                  <div v-if="getTeacherLabel(activeTask)" class="meta-chip">
                     <q-icon name="person" />
-                    <span>{{ activeTask.lehrer_name }}</span>
+                    <span>{{ getTeacherLabel(activeTask) }}</span>
                   </div>
                 </div>
               </div>
@@ -304,18 +304,8 @@
                   @click="schuelerAnmelden"
                   :disabled="!activeTask || isAlreadyRegisteredForTask"
                 >
-                  <q-icon
-                    :name="
-                      isAlreadyRegisteredForTask ? 'check_circle' : 'how_to_reg'
-                    "
-                  />
-                  <span>
-                    {{
-                      isAlreadyRegisteredForTask
-                        ? "Bereits angemeldet"
-                        : "Anmelden"
-                    }}
-                  </span>
+                  <q-icon :name="registrationButtonIcon" />
+                  <span>{{ registrationButtonText }}</span>
                 </button>
 
                 <button class="panel-btn outline" @click="goToUserTasks">
@@ -348,6 +338,11 @@
 
 <script>
 import axios from "axios";
+import {
+  getTaskDateForDay as resolveTaskDateForDay,
+  getTaskTimeForDay as resolveTaskTimeForDay,
+  getTeacherLabel,
+} from "../utils/eventDays";
 
 export default {
   name: "MainPage",
@@ -356,6 +351,7 @@ export default {
     return {
       tasks: [],
       userRegisteredTasks: [],
+      userExcusedDays: [],
       currentIndex: 0,
       visibleStart: 0,
       visibleCount: 5,
@@ -396,11 +392,44 @@ export default {
       return this.currentUser.klasse.toLowerCase().startsWith("5");
     },
 
-    isAlreadyRegisteredForTask() {
-      if (!this.activeTask || !this.currentUser?.userid) return false;
-      return this.userRegisteredTasks.some(
-        (t) => t.aufgabeid === this.activeTask.aufgabeid
+    assignableEventDays() {
+      if (!this.currentUser?.userid) return [];
+
+      const assignedDays = new Set(
+        (this.userRegisteredTasks || []).map((task) => Number(task.event_day)),
       );
+      const excusedDays = new Set(
+        (this.userExcusedDays || []).map((day) => Number(day)),
+      );
+
+      return [1, 2].filter(
+        (eventDay) =>
+          !Number.isNaN(eventDay) &&
+          !assignedDays.has(eventDay) &&
+          !excusedDays.has(eventDay),
+      );
+    },
+
+    isAlreadyRegisteredForTask() {
+      return this.assignableEventDays.length === 0;
+    },
+
+    registrationButtonText() {
+      if (this.isAlreadyRegisteredForTask) {
+        return "Bereits voll eingeteilt";
+      }
+
+      if (this.assignableEventDays.length === 2) {
+        return "Für beide Tage anmelden";
+      }
+
+      return `Für Tag ${this.assignableEventDays[0]} anmelden`;
+    },
+
+    registrationButtonIcon() {
+      return this.isAlreadyRegisteredForTask
+        ? "check_circle"
+        : "how_to_reg";
     },
 
     filteredTasks() {
@@ -502,6 +531,7 @@ export default {
         this.klasseInput = "";
 
         await this.loadTasks();
+        await this.loadUserRegisteredTasks();
       } catch (err) {
         console.error("Fehler beim Speichern der Klasse", err);
       }
@@ -552,12 +582,19 @@ export default {
 
     async loadUserRegisteredTasks() {
       try {
-        const res = await axios.get("http://localhost:3000/user/aufgaben", {
+        const res = await axios.get("http://localhost:3000/user/schedule", {
           withCredentials: true,
         });
-        this.userRegisteredTasks = res.data;
+
+        this.userRegisteredTasks = Array.isArray(res.data?.assignments)
+          ? res.data.assignments
+          : [];
+        this.userExcusedDays = Array.isArray(res.data?.excused_days)
+          ? res.data.excused_days
+          : [];
       } catch {
         this.userRegisteredTasks = [];
+        this.userExcusedDays = [];
       }
     },
 
@@ -649,11 +686,34 @@ export default {
       if (this.visibleStart < 0) this.visibleStart = 0;
     },
 
+    getTaskDateForDay(task, eventDay) {
+      return resolveTaskDateForDay(task, eventDay);
+    },
+
+    getTaskTimeForDay(task, eventDay) {
+      return resolveTaskTimeForDay(task, eventDay);
+    },
+
+    getTeacherLabel(task) {
+      return getTeacherLabel(task);
+    },
+
+    formatTaskDay(task, eventDay) {
+      const date = this.getTaskDateForDay(task, eventDay);
+      const time = this.getTaskTimeForDay(task, eventDay);
+
+      if (!date) return "";
+      if (!time) return this.formatDate(date);
+      return `${this.formatDate(date)}, ${this.formatTime(time)} Uhr`;
+    },
+
     formatDate(d) {
+      if (!d) return "";
       return new Date(d).toLocaleDateString("de-DE");
     },
 
     formatTime(t) {
+      if (!t) return "";
       return typeof t === "string" ? t.substring(0, 5) : "";
     },
   },
@@ -673,10 +733,9 @@ export default {
 .main-app {
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-  color: #ffffff;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  background: var(--app-bg-gradient);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   position: relative;
   overflow-x: hidden;
 }
@@ -699,14 +758,14 @@ export default {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.15;
+  opacity: 0.12;
   animation: orb-float 20s ease-in-out infinite;
 }
 
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(135deg, rgba(47, 111, 219, 0.85), rgba(31, 88, 185, 0.72));
   top: -200px;
   left: -200px;
   animation-delay: 0s;
@@ -715,7 +774,7 @@ export default {
 .orb-2 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  background: linear-gradient(135deg, rgba(201, 135, 55, 0.68), rgba(143, 93, 43, 0.58));
   bottom: -150px;
   right: -150px;
   animation-delay: -7s;
@@ -724,7 +783,7 @@ export default {
 .orb-3 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  background: linear-gradient(135deg, rgba(43, 136, 120, 0.7), rgba(28, 97, 87, 0.62));
   top: 40%;
   right: 10%;
   animation-delay: -14s;
@@ -768,12 +827,12 @@ export default {
 }
 
 .popup-modal {
-  background: linear-gradient(135deg, #1a1f3a, #0a0e27);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(145deg, rgba(10, 22, 38, 0.98), rgba(16, 32, 51, 0.98));
+  border: 1px solid var(--border-strong);
   border-radius: 24px;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-strong);
   overflow: hidden;
   animation: popup-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -790,7 +849,11 @@ export default {
 }
 
 .popup-top {
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(
+    145deg,
+    var(--accent-primary) 0%,
+    var(--accent-primary-strong) 100%
+  );
   padding: 40px 32px;
   text-align: center;
   display: flex;
@@ -826,14 +889,14 @@ export default {
 
 .popup-text {
   margin: 0 0 10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   font-size: 17px;
   line-height: 1.6;
   font-weight: 500;
 }
 
 .popup-hint {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--text-muted) !important;
   font-size: 14px !important;
   margin-bottom: 36px !important;
   font-weight: 400 !important;
@@ -848,7 +911,11 @@ export default {
   height: 52px;
   font-size: 17px;
   font-weight: 700;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(
+    145deg,
+    var(--accent-primary) 0%,
+    var(--accent-primary-strong) 100%
+  );
   color: #ffffff;
   border-radius: 12px;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -856,7 +923,28 @@ export default {
 
 .popup-save-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(31, 88, 185, 0.35);
+}
+
+.popup-input :deep(.q-field__control) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.popup-input :deep(.q-field__label),
+.popup-input :deep(.q-field__native),
+.popup-input :deep(.q-field__input),
+.popup-input :deep(.q-field__prepend),
+.popup-input :deep(.q-field__marginal),
+.popup-input :deep(.q-field__bottom),
+.popup-input :deep(.q-field__messages div) {
+  color: var(--text-secondary) !important;
+}
+
+.popup-input :deep(.q-field--focused .q-field__control) {
+  border-color: rgba(102, 157, 255, 0.75);
+  box-shadow: 0 0 0 3px rgba(47, 111, 219, 0.14);
 }
 
 .loader-screen {
@@ -907,7 +995,7 @@ export default {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #00d4ff;
+  background: #8cb8ff;
   animation: loader-bounce 1.4s ease-in-out infinite;
 }
 
@@ -939,9 +1027,9 @@ export default {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 14, 39, 0.85);
+  background: rgba(8, 17, 31, 0.84);
   backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .app-header-container {
@@ -971,9 +1059,9 @@ export default {
   gap: 8px;
   padding: 12px 20px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -982,27 +1070,27 @@ export default {
 
 .header-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.4);
+  border-color: rgba(102, 157, 255, 0.35);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(22, 49, 92, 0.22);
 }
 
 .header-btn.logout {
-  background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+  background: linear-gradient(145deg, var(--accent-danger) 0%, var(--accent-danger-strong) 100%);
   border: none;
 }
 
 .header-btn.logout:hover {
-  box-shadow: 0 8px 24px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 8px 24px rgba(150, 46, 59, 0.32);
 }
 
 .header-btn.admin {
-  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  background: linear-gradient(145deg, var(--accent-warm) 0%, #aa6f29 100%);
   border: none;
 }
 
 .header-btn.admin:hover {
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 8px 24px rgba(128, 87, 35, 0.32);
 }
 
 .header-branding {
@@ -1013,7 +1101,7 @@ export default {
   font-size: 34px;
   margin: 0;
   font-weight: 800;
-  background: linear-gradient(135deg, #00d4ff 0%, #00f5a0 100%);
+  background: linear-gradient(145deg, #f8fbff 0%, #c7dbf8 45%, #78a5e8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1023,7 +1111,7 @@ export default {
 .header-branding p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   font-weight: 500;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -1051,21 +1139,21 @@ export default {
 }
 
 .badge-admin {
-  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  background: linear-gradient(145deg, var(--accent-warm), #aa6f29);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 4px 12px rgba(128, 87, 35, 0.28);
 }
 
 .badge-teacher {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  color: #0a0e27;
-  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.3);
+  background: linear-gradient(145deg, var(--accent-secondary), #1c6157);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(28, 97, 87, 0.28);
 }
 
 .badge-student {
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(145deg, var(--accent-primary), var(--accent-primary-strong));
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(31, 88, 185, 0.28);
 }
 
 .profile-identity {
@@ -1075,26 +1163,26 @@ export default {
   background: rgba(255, 255, 255, 0.05);
   padding: 8px 16px 8px 8px;
   border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-soft);
   transition: all 0.3s ease;
 }
 
 .profile-identity:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(102, 157, 255, 0.28);
 }
 
 .profile-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(145deg, var(--accent-primary), var(--accent-primary-strong));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(31, 88, 185, 0.28);
 }
 
 .profile-name {
@@ -1136,16 +1224,16 @@ export default {
 .special-view.free-day {
   background: linear-gradient(
     135deg,
-    rgba(0, 245, 160, 0.1),
-    rgba(0, 212, 170, 0.05)
+    rgba(43, 136, 120, 0.14),
+    rgba(28, 97, 87, 0.08)
   );
-  border-color: rgba(0, 245, 160, 0.3);
+  border-color: rgba(43, 136, 120, 0.28);
 }
 
 .special-view.free-day::before {
   background: radial-gradient(
     circle,
-    rgba(0, 245, 160, 0.15) 0%,
+    rgba(var(--accent-secondary-rgb), 0.16) 0%,
     transparent 70%
   );
 }
@@ -1153,16 +1241,16 @@ export default {
 .special-view.diploma {
   background: linear-gradient(
     135deg,
-    rgba(0, 212, 255, 0.1),
-    rgba(0, 153, 255, 0.05)
+    rgba(47, 111, 219, 0.14),
+    rgba(31, 88, 185, 0.08)
   );
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(47, 111, 219, 0.28);
 }
 
 .special-view.diploma::before {
   background: radial-gradient(
     circle,
-    rgba(0, 212, 255, 0.15) 0%,
+    rgba(var(--accent-primary-rgb), 0.16) 0%,
     transparent 70%
   );
 }
@@ -1188,14 +1276,14 @@ export default {
 }
 
 .special-view.free-day h2 {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
+  background: linear-gradient(135deg, #9fe1d3, #5db9aa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .special-view.diploma h2 {
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(135deg, #d9e9ff, #79a7eb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1231,13 +1319,13 @@ export default {
 .benefit-item:hover {
   transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 245, 160, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.15);
+  border-color: rgba(43, 136, 120, 0.3);
+  box-shadow: 0 8px 24px rgba(28, 97, 87, 0.16);
 }
 
 .benefit-item .q-icon {
   font-size: 32px;
-  color: #00f5a0;
+  color: #80d6c7;
 }
 
 .benefit-item span {
@@ -1256,20 +1344,20 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 16px 36px;
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  color: #0a0e27;
+  background: linear-gradient(145deg, var(--accent-primary), var(--accent-primary-strong));
+  color: #ffffff;
   border: none;
   border-radius: 14px;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.3);
+  box-shadow: 0 8px 24px rgba(31, 88, 185, 0.3);
 }
 
 .cta-primary:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 245, 160, 0.5);
+  box-shadow: 0 12px 32px rgba(31, 88, 185, 0.42);
 }
 
 .diploma-details {
@@ -1282,7 +1370,7 @@ export default {
 }
 
 .diploma-details h3 {
-  color: #00d4ff;
+  color: #8cb8ff;
   margin-bottom: 28px;
   font-size: 24px;
   font-weight: 700;
@@ -1330,15 +1418,16 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(5, 13, 24, 0.32);
   border-radius: 10px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-weight: 500;
+  border: 1px solid var(--border-soft);
 }
 
 .meta-chip .q-icon {
-  color: #00d4ff;
+  color: #8cb8ff;
 }
 
 .diploma-loading {
@@ -1358,15 +1447,15 @@ export default {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: rgba(var(--accent-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.26);
   border-radius: 16px;
   padding: 20px 24px;
   margin-top: 32px;
 }
 
 .diploma-notice .q-icon {
-  color: #00d4ff;
+  color: #8cb8ff;
   font-size: 28px;
   flex-shrink: 0;
 }
@@ -1403,21 +1492,21 @@ export default {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-soft);
   overflow: hidden;
 }
 
 .tab-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(102, 157, 255, 0.28);
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(20, 50, 89, 0.18);
 }
 
 .tab-card.tab-active {
-  background: rgba(0, 212, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.5);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.25);
+  background: rgba(47, 111, 219, 0.14);
+  border-color: rgba(102, 157, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(20, 50, 89, 0.22);
 }
 
 .tab-inner {
@@ -1442,7 +1531,7 @@ export default {
 }
 
 .tab-card.tab-active .tab-label {
-  color: #00d4ff;
+  color: #c7dbf8;
   font-weight: 700;
 }
 
@@ -1452,7 +1541,7 @@ export default {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #00d4ff 0%, #00f5a0 100%);
+  background: linear-gradient(90deg, #5e92e8 0%, #8bbce7 100%);
   border-radius: 3px 3px 0 0;
   animation: highlight-slide 0.3s ease;
 }
@@ -1491,11 +1580,11 @@ export default {
 .stage-visual {
   width: 100%;
   height: 100%;
-  border: 2px dashed rgba(0, 212, 255, 0.3);
+  border: 2px dashed rgba(102, 157, 255, 0.26);
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.02),
-    rgba(0, 212, 255, 0.05)
+    rgba(47, 111, 219, 0.05)
   );
   display: flex;
   align-items: center;
@@ -1533,7 +1622,7 @@ export default {
   height: 120%;
   background: radial-gradient(
     circle,
-    rgba(0, 212, 255, 0.25) 0%,
+    rgba(47, 111, 219, 0.2) 0%,
     transparent 70%
   );
   border-radius: 50%;
@@ -1556,7 +1645,7 @@ export default {
   font-size: 22px;
   font-weight: 700;
   margin: 0 0 24px;
-  color: #00d4ff;
+  color: #c7dbf8;
 }
 
 .visual-decor {
@@ -1569,7 +1658,7 @@ export default {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #00d4ff;
+  background: #8cb8ff;
   animation: decor-bounce 1.4s ease-in-out infinite;
 }
 
@@ -1600,19 +1689,19 @@ export default {
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  background: linear-gradient(145deg, var(--accent-primary), var(--accent-primary-strong));
   border: none;
   border-radius: 50%;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(31, 88, 185, 0.26);
   flex-shrink: 0;
 }
 
 .nav-arrow:hover {
   transform: scale(1.15);
-  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 8px 28px rgba(31, 88, 185, 0.34);
 }
 
 .nav-arrow:active {
@@ -1624,11 +1713,16 @@ export default {
   grid-template-columns: 1fr auto;
   gap: 36px;
   align-items: center;
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
-  color: #ffffff;
+  background: linear-gradient(
+    145deg,
+    rgba(11, 28, 50, 0.96),
+    rgba(18, 46, 84, 0.94)
+  );
+  color: var(--text-primary);
   padding: 36px 44px;
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
   margin-top: 32px;
 }
 
@@ -1686,13 +1780,13 @@ export default {
 }
 
 .panel-btn.register {
-  background: linear-gradient(135deg, #00f5a0, #00d4aa);
-  color: #0a0e27;
+  background: linear-gradient(145deg, var(--accent-primary), var(--accent-primary-strong));
+  color: #ffffff;
 }
 
 .panel-btn.register:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(0, 245, 160, 0.5);
+  box-shadow: 0 10px 30px rgba(31, 88, 185, 0.34);
 }
 
 .panel-btn.register:disabled {
@@ -1701,13 +1795,13 @@ export default {
 }
 
 .panel-btn.teacher {
-  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  background: linear-gradient(145deg, var(--accent-warm), #aa6f29);
   color: #ffffff;
 }
 
 .panel-btn.teacher:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.5);
+  box-shadow: 0 10px 30px rgba(128, 87, 35, 0.32);
 }
 
 .panel-btn.teacher:disabled {
@@ -1716,13 +1810,13 @@ export default {
 }
 
 .panel-btn.outline {
-  background: transparent;
-  color: #ffffff;
-  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .panel-btn.outline:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-3px);
 }
 
@@ -1752,7 +1846,7 @@ export default {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: rgba(0, 212, 255, 0.3);
+  background: rgba(var(--accent-primary-rgb), 0.3);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
@@ -1762,14 +1856,14 @@ export default {
 }
 
 .nav-dot:hover {
-  background: rgba(0, 212, 255, 0.6);
+  background: rgba(var(--accent-primary-rgb), 0.55);
   transform: scale(1.25);
 }
 
 .nav-dot.dot-active {
-  background: #00d4ff;
+  background: #8cb8ff;
   transform: scale(1.4);
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 4px 16px rgba(var(--accent-primary-rgb), 0.4);
 }
 
 .dot-core {

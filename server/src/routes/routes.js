@@ -114,32 +114,125 @@ router.patch(
   ensureAdmin,
   asyncHandler(async (req, res) => {
     const aufgabeid = parseInt(req.params.id, 10);
-    const { lehrerid } = req.body;
 
     if (Number.isNaN(aufgabeid)) {
       return res.status(400).json({ error: 'Ungueltige Aufgabe' });
     }
 
-    const normalisierteLehrerId = lehrerid === null ? null : parseInt(lehrerid, 10);
-    if (lehrerid !== null && Number.isNaN(normalisierteLehrerId)) {
-      return res.status(400).json({ error: 'Ungueltiger Lehrer' });
-    }
-
-    if (normalisierteLehrerId !== null) {
-      const lehrer = await model.findLehrerById(normalisierteLehrerId);
-      if (!lehrer) {
-        return res.status(404).json({ error: 'Lehrer nicht gefunden' });
-      }
-    }
-
-    const aufgabe = await model.assignLehrerZuAufgabe(aufgabeid, normalisierteLehrerId);
+    const aufgabe = await model.findAufgabeById(aufgabeid);
     if (!aufgabe) {
       return res.status(404).json({ error: 'Aufgabe nicht gefunden' });
     }
 
+    const rawLehrerIds = Array.isArray(req.body.lehrerids)
+      ? req.body.lehrerids
+      : req.body.lehrerid === null || req.body.lehrerid === undefined
+        ? []
+        : [req.body.lehrerid];
+
+    const lehrerids = Array.from(
+      new Set(
+        rawLehrerIds
+          .map((value) => parseInt(value, 10))
+          .filter((value) => Number.isInteger(value) && value > 0),
+      ),
+    );
+
+    for (const lehrerid of lehrerids) {
+      const lehrer = await model.findLehrerById(lehrerid);
+      if (!lehrer) {
+        return res.status(404).json({ error: `Lehrer ${lehrerid} nicht gefunden` });
+      }
+    }
+
+    const updatedTask = await model.assignLehrerZuAufgabe(aufgabeid, lehrerids);
+
     return res.json({
-      message: 'Lehrer erfolgreich zugewiesen',
+      message: 'Lehrer-Zuweisung erfolgreich gespeichert',
+      aufgabe: updatedTask,
+    });
+  }),
+);
+
+router.put(
+  '/admin/lehrer/:lehrerid/aufgabe',
+  ensureAuth,
+  ensureAdmin,
+  asyncHandler(async (req, res) => {
+    const lehrerid = parseInt(req.params.lehrerid, 10);
+    const aufgabeid =
+      req.body.aufgabeid === null || req.body.aufgabeid === undefined
+        ? null
+        : parseInt(req.body.aufgabeid, 10);
+
+    if (Number.isNaN(lehrerid)) {
+      return res.status(400).json({ error: 'Ungueltiger Lehrer' });
+    }
+
+    const lehrer = await model.findLehrerById(lehrerid);
+    if (!lehrer) {
+      return res.status(404).json({ error: 'Lehrer nicht gefunden' });
+    }
+
+    if (aufgabeid !== null && Number.isNaN(aufgabeid)) {
+      return res.status(400).json({ error: 'Ungueltige Aufgabe' });
+    }
+
+    if (aufgabeid !== null) {
+      const aufgabe = await model.findAufgabeById(aufgabeid);
+      if (!aufgabe) {
+        return res.status(404).json({ error: 'Aufgabe nicht gefunden' });
+      }
+    }
+
+    const aufgabe = await model.setAufgabeFuerLehrer(lehrerid, aufgabeid);
+    return res.json({
+      message: 'Lehrer-Aufgabe erfolgreich gespeichert',
       aufgabe,
+    });
+  }),
+);
+
+router.get(
+  '/admin/schueler/overview',
+  ensureAuth,
+  ensureAdmin,
+  asyncHandler(async (req, res) => {
+    const overview = await model.getAdminSchuelerUebersicht();
+    return res.json(overview);
+  }),
+);
+
+router.put(
+  '/admin/schueler/:userid/entschuldigungen',
+  ensureAuth,
+  ensureAdmin,
+  asyncHandler(async (req, res) => {
+    const userid = parseInt(req.params.userid, 10);
+    const rawEventDays = Array.isArray(req.body.eventDays) ? req.body.eventDays : [];
+
+    if (Number.isNaN(userid)) {
+      return res.status(400).json({ error: 'Ungueltiger Schueler' });
+    }
+
+    const user = await model.findUserById(userid);
+    if (!user) {
+      return res.status(404).json({ error: 'Schueler nicht gefunden' });
+    }
+
+    if (user.klasse === 'Admin' || user.klasse === 'Lehrer') {
+      return res.status(400).json({ error: 'Nur Schueler koennen entschuldigt werden' });
+    }
+
+    const eventDays = rawEventDays
+      .map((eventDay) => parseInt(eventDay, 10))
+      .filter((eventDay) => eventDay === 1 || eventDay === 2);
+
+    const entschuldigteTage = await model.setSchuelerEntschuldigteTage(userid, eventDays);
+
+    return res.json({
+      message: 'Entschuldigungen erfolgreich gespeichert',
+      event_days: entschuldigteTage,
     });
   }),
 );
@@ -169,17 +262,29 @@ router.post(
   asyncHandler(async (req, res) => {
     const aufgabeid = parseInt(req.params.id, 10);
     const { userid } = req.user;
+    const eventDay = req.body.event_day ?? req.body.eventDay ?? null;
 
     if (Number.isNaN(aufgabeid)) {
       return res.status(400).json({ error: 'Ungueltige Aufgabe' });
     }
 
-    if (req.user.klasse !== 'Admin' && req.user.klasse !== 'Lehrer') {
-      const anmeldung = await model.schuelerFuerAufgabeAnmelden(userid, aufgabeid);
-      return res.json({ message: 'Erfolgreich fuer Aufgabe angemeldet', anmeldung });
+    if (req.user.klasse === 'Admin' || req.user.klasse === 'Lehrer') {
+      return res.status(403).json({ error: 'Nur Schueler koennen sich fuer Aufgaben anmelden' });
     }
 
-    return res.status(403).json({ error: 'Nur Schueler koennen sich fuer Aufgaben anmelden' });
+    const aufgabe = await model.findAufgabeById(aufgabeid);
+    if (!aufgabe) {
+      return res.status(404).json({ error: 'Aufgabe nicht gefunden' });
+    }
+
+    const anmeldungen = await model.schuelerFuerAufgabeAnmelden(userid, aufgabeid, {
+      event_day: eventDay,
+    });
+
+    return res.json({
+      message: 'Erfolgreich fuer Aufgabe angemeldet',
+      anmeldungen,
+    });
   }),
 );
 
@@ -194,7 +299,7 @@ router.post(
     const result = await model.lehrerVonAufgabeAbmelden(req.user.lehrerid);
     return res.json({
       message: 'Erfolgreich von der Aufgabe abgemeldet',
-      aufgabe: result,
+      aufgaben: result,
     });
   }),
 );
@@ -217,6 +322,22 @@ router.get(
 );
 
 router.get(
+  '/user/schedule',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.klasse === 'Admin' || req.user.klasse === 'Lehrer') {
+      return res.json({
+        assignments: [],
+        excused_days: [],
+      });
+    }
+
+    const schedule = await model.getSchuelerTagesplan(req.user.userid);
+    return res.json(schedule);
+  }),
+);
+
+router.get(
   '/aufgaben/:aufgabeid/schueler',
   ensureAuth,
   asyncHandler(async (req, res) => {
@@ -225,6 +346,8 @@ router.get(
     }
 
     const aufgabeid = parseInt(req.params.aufgabeid, 10);
+    const eventDay = req.query.event_day ?? req.query.day ?? null;
+
     if (Number.isNaN(aufgabeid)) {
       return res.status(400).json({ error: 'Ungueltige Aufgabe' });
     }
@@ -234,8 +357,44 @@ router.get(
       return res.status(403).json({ error: 'Keine Berechtigung fuer diese Aufgabe' });
     }
 
-    const schueler = await model.getAngemeldeteSchuelerFuerAufgabe(aufgabeid);
+    const schueler = await model.getAngemeldeteSchuelerFuerAufgabe(aufgabeid, eventDay);
     return res.json(schueler);
+  }),
+);
+
+router.patch(
+  '/anmeldungen/:anmeldung_id/anwesenheit',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.klasse !== 'Lehrer') {
+      return res.status(403).json({ error: 'Nur Lehrer koennen Anwesenheit eintragen' });
+    }
+
+    const anmeldungId = parseInt(req.params.anmeldung_id, 10);
+    const { anwesend } = req.body;
+
+    if (Number.isNaN(anmeldungId)) {
+      return res.status(400).json({ error: 'Ungueltige Anmeldung' });
+    }
+
+    if (typeof anwesend !== 'boolean') {
+      return res.status(400).json({ error: 'Anwesenheit muss als true oder false uebergeben werden' });
+    }
+
+    const anmeldung = await model.setSchuelerAnwesenheitFuerLehrer(
+      anmeldungId,
+      req.user.lehrerid,
+      anwesend,
+    );
+
+    if (!anmeldung) {
+      return res.status(404).json({ error: 'Anmeldung nicht gefunden' });
+    }
+
+    return res.json({
+      message: 'Anwesenheit erfolgreich gespeichert',
+      anmeldung,
+    });
   }),
 );
 

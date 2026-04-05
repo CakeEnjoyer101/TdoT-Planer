@@ -13,11 +13,23 @@ export const getProfile = async (req, res) => {
 
 export const createAufgabe = async (req, res) => {
   try {
-    const aufgabe = await model.createAufgabe(req.body);
-    res.status(201).json(aufgabe);
+    const lehrerids = model.normalizeLehrerIds(req.body?.lehrerids ?? req.body?.lehrerid);
+    if (lehrerids.length > 0) {
+      const gefundeneLehrer = await model.getLehrerByIds(lehrerids);
+      if (gefundeneLehrer.length !== lehrerids.length) {
+        return res.status(404).json({ error: 'Mindestens ein ausgewaehlter Lehrer wurde nicht gefunden.' });
+      }
+    }
+
+    const aufgabe = await model.createAufgabe({
+      ...req.body,
+      lehrerids,
+    });
+
+    return res.status(201).json(aufgabe);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to create aufgabe' });
+    return res.status(400).json({ error: err.message || 'Aufgabe konnte nicht erstellt werden.' });
   }
 };
 
